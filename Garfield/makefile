@@ -35,6 +35,8 @@ MakeGasFile_2: MakeGasFile_2.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 MakeGasFile_3: MakeGasFile_3.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+MakeGasFile_flight: MakeGasFile_flight.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 jet: jet.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet: smalljet.C
