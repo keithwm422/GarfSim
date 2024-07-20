@@ -29,6 +29,14 @@ LDLIBS +=  -lGeom
 
 garfroot: garfroot.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+Csv_driftv_vs_efield: Csv_driftv_vs_efield.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+Csv_drift_vs_Temp: Csv_drift_vs_Temp.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+Csv_drift_vs_gascomp: Csv_drift_vs_gascomp.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+LoadGasFile: LoadGasFile.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 MakeGasFile: MakeGasFile.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 MakeGasFile_2: MakeGasFile_2.C
