@@ -32,6 +32,7 @@
 #include "TMath.h"
 #include <sys/types.h>
 #include <unistd.h>
+#include <fstream>
 
 
 
@@ -45,21 +46,16 @@ int main(int argc, char * argv[]) {
   char * cdum;
   cdum = getenv("DCSimNtrack");
   ntrack  = atoi(cdum);
-
   std::cout << " # tracks " << ntrack << std::endl;
   cdum= getenv("DCSimtrackx");
   trackx = atof(cdum);
   std::cout << " Track Start X " << trackx << std::endl;
-
   cdum = getenv("DCSimtrackang");
   trackang = atof(cdum);
   std::cout << " Track Angle " << trackang << std::endl;
-
   simoutFile = getenv("DCSimOutFile");
-
   bool realtimeplots = true;
   int maxclustersize = 10000;
-
   TRint* app = new TRint("Garfield", &argc, argv, 0, 0);
   TH1D *SensewireSig[180];
   TFile * Outfile = new TFile(simoutFile,"recreate");
@@ -71,6 +67,17 @@ int main(int argc, char * argv[]) {
   TH1F clustersizeused("clustersizeused","clustersizeused",1000,0.,100.);
 
   std::stringstream wid;
+
+  std::ofstream outputfilecathode("cathode_wires_notracks.txt");
+  std::ofstream outputfilesense("sense_wires_notracks.txt");
+  std::ofstream outputfilegetelectron("electronstartpoints_notracks.txt");
+  std::ofstream outputfilegetelectronendpoint("electronendpoints_notracks.txt");
+  std::ofstream outputfiledrifttimes("electrondrifttimes_303_notracks.txt");
+  std::ofstream outputfile("electron_average_drifttimes_notracks.txt");
+  outputfile << "num_electrons" << "," << "running_average" << "," << "new_average" << "," << "running_sum" << "," << "curr_sig" << "," << "ne" << "," << "ni" << std::endl;
+
+  //name for drifttimes vs drift distance
+
 
   int pid = getpid();
   timeval t;
@@ -105,14 +112,17 @@ int main(int argc, char * argv[]) {
 
 //  gas->LoadGasFile("co2_90_AR_10_T273.gas");
 //  gas->LoadGasFile("keith_co2_85_AR_15_T273.gas");
-  gas->LoadGasFile("Flight2024_P_755.038_T_293.15_.gas");
+  gas->LoadGasFile("Flight2024_BvsTstudy_P_755.865_T_303.15_.gas");
+
+  // lets just print out the drift velocity to a file?
+
   char * IonData = getenv("GARFIELD_IONDATA") ;
   gas->LoadIonMobility(IonData);
   gas->PrintGas();
 
   ComponentAnalyticField * cmp = new ComponentAnalyticField();
 //  cmp->SetMagneticField(0.,0.,0.0);
-  cmp->SetMagneticField(0.,0.,1.0);
+  //cmp->SetMagneticField(0.,0.,1.0);
 
   GeometrySimple * geo = new GeometrySimple();
  
@@ -121,7 +131,7 @@ int main(int argc, char * argv[]) {
   cmp->SetGeometry(geo);
 
   const double vCathode= -7500;
-  const double rCathode= 175e-4;
+  const double rCathode= 175e-4; // is this in centimeters? seems so
   const double vAnode= 0;
   const double rAnode= 20e-4;
   const double vPotential= -250;
@@ -130,14 +140,19 @@ int main(int argc, char * argv[]) {
   const double anodesep = 0.8;
   const double potentialsep = 0.8;
   const double cathodesep =0.4;
+  //const double cathodesep =0.2;
+  //const double cathodesep =0.1;
   const double fieldsep = 0.2;
    
   for (int iplane=0;iplane<2;iplane++){
     for(int iw=0;iw<17;iw++){
+//    for(int iw=0;iw<34;iw++){
+//    for(int iw=0;iw<68;iw++){
       float y = 3.2-iw*cathodesep;
-      float x = 8-16.0*iplane;
+      float x = 7.62-15.24*iplane;
       cmp->AddWire(x,y,2 * rCathode, vCathode, "c");
-      std::cout << " wire " << x << " " << y << " " << vCathode << " " << "c" << std::endl;
+      //std::cout << " wire " << x << " " << y << " " << vCathode << " " << "c" << std::endl;
+      outputfilecathode << " wire " << x << " " << y << " " << vCathode << " " << "c" << std::endl;
     }
   }
   
@@ -150,7 +165,8 @@ int main(int argc, char * argv[]) {
       if(iw%2==0) sign = -1.0;
       float x = sign*300e-4;
       cmp->AddWire(x,y,2 * rAnode, vAnode, "a");
-      std::cout << " wire " << x << " " << y << " " << vAnode << " " << "a" << std::endl;
+      //std::cout << " wire " << x << " " << y << " " << vAnode << " " << "a" << std::endl;
+      outputfilesense << " wire " << x << " " << y << " " << vAnode << " " << "a" << std::endl;
     }
     for(int iw=0;iw<nwire+1;iw++){
       float y = 2.8-iw*potentialsep;
@@ -188,14 +204,13 @@ int main(int argc, char * argv[]) {
   ViewSignal * vs1 = new ViewSignal;
 
   sensor->AddComponent(cmp);
-  sensor->SetTimeWindow(0,2,5000);
-  
-  cmp->AddReadout("a"); 
+  sensor->SetTimeWindow(0,2,10000); // might need to change this, its start, step size, number of steps
+  cmp->AddReadout("a");
   sensor->AddElectrode(cmp,"a");
   vs1->SetSensor(sensor);
   
   ViewDrift * vd = new ViewDrift();
-  TCanvas* canvas3 = new TCanvas();
+  TCanvas* canvas3 = new TCanvas("hye");
   vs1->SetCanvas(canvas3);
     TCanvas* canvas1 = new TCanvas();
     TCanvas* canvas2 = new TCanvas();
@@ -233,121 +248,60 @@ int main(int argc, char * argv[]) {
   unsigned int ne=0, ni=0;
     std::cout << __LINE__ << std::endl;
 
-    driftline->AvalancheElectron(-300e-4+rAnode+100e-4,2.4,0,0);
-    std::cout << __LINE__ << std::endl;
-    driftline->GetAvalancheSize(ne, ni);
-    std::cout << "avalanche # electrons= " << ne << " # ions= " << ni << std::endl;
+    //driftline->AvalancheElectron(-300e-4+rAnode+100e-4,2.4,0,0);
+    //std::cout << __LINE__ << std::endl;
+    //driftline->GetAvalancheSize(ne, ni);
+    //std::cout << "avalanche # electrons= " << ne << " # ions= " << ni << std::endl;
 
-  AvalancheMC * driftline_i = new AvalancheMC();
-  driftline_i->SetDistanceSteps(0.001);
-  //driftline_i->EnableMagneticField();
-  driftline_i->SetSensor(sensor);
-  driftline_i->EnableSignalCalculation();
-
-  TrackHeed * track = new TrackHeed();
-  track->EnableElectricField();
-  track->EnableMagneticField();
-  track->EnableDeltaElectronTransport();
-    
-  for (int itrack=0;itrack<ntrack;itrack++){
-    int clustercount=0;
-    int usedclustercount=0;
-    //  float trackenergy = 1e9; 
-    float trackenergy = 8*1e9;     // for Be
-    float trackangle = trackang;
-    float trackstartX = trackx;
-    float trackstartY = 3.5;
-    track->SetSensor(sensor);
-    // track->SetParticle("p");
-    track->SetParticleUser(8.4375e9,4);    // for Be
-    track->SetKineticEnergy(trackenergy);
-       track->EnablePlotting(vd);
-    std::cout << " NEW TRACK STARTED " << itrack << " x: " << trackstartX << std::endl;
-
-    double dirx = trackangle/TMath::Sqrt(1+trackangle*trackangle);
-    double diry = -1.0/TMath::Sqrt(1+trackangle*trackangle);
-
-    track->NewTrack(trackstartX,trackstartY,0,0,dirx,diry,0);
-    
-    for (int iplane=0;iplane<1;iplane++){
-      for (int iw =0;iw<7;iw++){
-        int iadd = iplane*7 + iw;
-        SensewireSig[iadd]->Reset();
-      }
+  for (int iplane=0;iplane<1;iplane++){
+    for (int iw =0;iw<7;iw++){
+      int iadd = iplane*7 + iw;
+      SensewireSig[iadd]->Reset();
     }
-    double xcl, ycl, zcl, tcl, ecl, extra;
-    int ncl;
-    double r=0.01;
-    double x=0, y=0, z=0, t=0, e=0, dx=0, dy=0, dz=0;
+  }
+  double r=0.01;
+  double x_i=7.60249, y_i=0, z_i=0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0
+  // really the x_i here is 7.62 but also subtract off the diameter of the cathode wire (2*rCathode)
+  int num_electrons=0;
+  double min_variation=0.001;
+  double running_sum=0;
+  double running_average=0;
+  double new_average=0;
+  double curr_sig=0;
+  bool keep_running=true;
+  while(keep_running){
     double xendpoint = 0, yendpoint = 0, zendpoint=0;
     double xendpoint2 = 0, yendpoint2 = 0, zendpoint2=0;
     double tendpoint = 0, tendpoint2 = 0;
+	  //track->GetElectron(i,x,y,z,t,e,dx,dy,dz);
     int i=0;
-    int stat;
-    std::cout << "rough # clusters: " << track->GetClusterDensity()*5.6 << std::endl;
-    while (track->GetCluster(xcl, ycl, zcl, tcl, ncl, ecl, extra)){
-      std::cout << " new cluster: # used " << usedclustercount << " Total: " << clustercount << " " << xcl << " " << ycl << std::endl;
-      clustercount++;
-      clustersize.Fill(ncl);
-      if(ncl<maxclustersize){
-        usedclustercount++;
-	      clustersizeused.Fill(ncl);
-	      for(i = 0; i < ncl; i++){
-	        track->GetElectron(i,x,y,z,t,e,dx,dy,dz);
-	        //std::cout << " ****  " << i  << " of " << ncl << "  electrons " << x << " " << y << " " << z << " " << t << " " << e << " " << dx << " " << dy << " " << dz << std::endl;
-          //std::cout << __LINE__ << std::endl;
-	        driftline->DriftElectron(x,y,z,0);
-          //std::cout << __LINE__ << std::endl;
-	        //int nelectronpoints = driftline->GetNumberOfElectronEndpoints();
-	        driftline->GetElectronEndpoint(0, xendpoint, yendpoint, zendpoint, tendpoint, xendpoint2, yendpoint2, zendpoint2, tendpoint2, stat);
-          std::cout << " ion start point "  << xendpoint2 << " " << yendpoint2 << " " << tendpoint2 << std::endl;
-	        double angle = RndmGaussian(0,1.4);
-	        driftline_i->DriftIon(xendpoint2 + r*sin(angle), yendpoint2 + r*cos(angle), zendpoint2,tendpoint2); 
-	        int iplane, iw;
-	        iplane=0;
-	        iw = (int)((yendpoint2+2.5)/anodesep);  
-      	  if(iw>=0 && iw <7){
-      	    int iadd = iw;
-      	    std::cout << " signal on plane " << iplane << " wire " << iw <<  " " << iadd  << std::endl;
-      	    vs1->PlotSignal("a");
-	          if(realtimeplots){
-	          vd->Plot();
-	          canvas2->Update();
-	          canvas1->Update();
-	          }
-	          if(iadd>=0 && iadd<7){
-	            SensewireSig[iadd]->Add(vs1->GetHistogram());
-	          }
-	        }
-	        //else std::cout << " invalid wire " << iw << std::endl;
-	        sensor->ClearSignal();
-	      }
-	      if(clustercount>40000) break;
-      }
+    int stat=0;
+	  //outputfilegetelectron << "startpoint" << i  << " of " << ncl << "  electrons " << x << " " << y << " " << z << " " << t << " " << e << " " << dx << " " << dy << " " << dz << std::endl;
+    //std::cout << __LINE__ << std::endl;
+	  driftline->DriftElectron(x_i,y_i,z_i,0);
+    //std::cout << __LINE__ << std::endl;
+	  //int nelectronpoints = driftline->GetNumberOfElectronEndpoints();
+	  driftline->GetElectronEndpoint(0, xendpoint, yendpoint, zendpoint, tendpoint, xendpoint2, yendpoint2, zendpoint2, tendpoint2, stat);
+    curr_sig=tendpoint2-tendpoint;
+    num_electrons++;
+    running_sum+=curr_sig;
+    new_average=running_sum/num_electrons;
+    if(num_electrons>300 && TMath::Abs((new_average-running_average)/running_average)<=min_variation) keep_running=false;
+    else{
+      // compute the average some more
+      outputfile << num_electrons << "," << running_average << "," << new_average << "," << running_sum << "," << curr_sig << "," << ne << "," << ni << std::endl;
+      //std::cout << "# Avalanched electrons: " << num_electrons << " ave sig is: " << running_average << " new average is " << new_average << std::endl;    
+      running_average=new_average;
+      outputfiledrifttimes << i << "," << tendpoint2-tendpoint << std::endl;
     }
-    for(int iw=0;iw<7;iw++){
-      SensewireSig[iw]->Write();
-    }
-    ncluster.Fill(clustercount);
-    nclusterused.Fill(usedclustercount);
   }
-  ncluster.Write();
-  clustersize.Write();
-  nclusterused.Write();
-  clustersizeused.Write();
-  TH1D * wire_sig[2]; 
-  wire_sig[0] = new TH1D("wire_sig0","wire_sig0",5000,0,10000);
-  wire_sig[1] = new TH1D("wire_sig1","wire_sig1",5000,0,10000);
+  outputfilecathode.close();
+  outputfilesense.close();
+  outputfilegetelectron.close();
+  outputfilegetelectronendpoint.close();
+  outputfiledrifttimes.close();
+    std::cout << "# Avalanched electrons: " << num_electrons << " ave sig is: " << running_average << std::endl;
+  outputfile.close();
 
-  //vs1->GetHistogram()->Write();
-  if(realtimeplots){
-    vs1->PlotSignal("a");
-       vd->Plot(true, false);
-        canvas1->Update();
-      canvas1->Print("newtrack.gif");
-  }
-  wire_sig[0]->Add(vs1->GetHistogram());
-  wire_sig[0]->Write();
-  Outfile->Close();
   app->Run(kTRUE);
 }

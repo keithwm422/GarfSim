@@ -21,7 +21,7 @@ int main(int argc, char * argv[]) {
   MediumMagboltz* gas = new MediumMagboltz();
   gas->SetTemperature(temperature);
   gas->SetPressure(pressure);
-  gas->SetComposition("CO2", 90.,"AR", 10.);
+  gas->SetComposition("CO2", 85.,"AR", 15.);
  
   // Set the field range to be covered by the gas table. 
   const int nFields = 20;
@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) {
   gas->GenerateGasTable(ncoll);
   gas->DisableDebugging();
   // Save the table. 
-  gas->WriteGasFile("keith_co2_90_AR_10_T273.gas");
+  gas->WriteGasFile("keith_co2_85_AR_15_T273.gas");
 
   // app.Run(kTRUE);
 
