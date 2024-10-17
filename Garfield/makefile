@@ -63,9 +63,13 @@ smalljet: smalljet.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet_drifttime: smalljet_drifttime.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+smalljet_check_num_e: smalljet_check_num_e.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet_drifttime_electron_only: smalljet_drifttime_electron_only.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet_drifttime_electron_vs_coordinates: smalljet_drifttime_electron_vs_coordinates.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+smalljet_drifttime_electron_vs_coordinates_finegrid: smalljet_drifttime_electron_vs_coordinates_finegrid.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 gasgainstudy: gas_gain_study.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)

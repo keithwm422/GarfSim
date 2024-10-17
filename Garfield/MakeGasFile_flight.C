@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
   const double temperature = 273.15 + invals[1];
   std::cout << "temperature in kelvin: " << temperature << std::endl;
   std::stringstream outfilename;
-  outfilename << "Flight2024_BvsTstudy_P_" << pressure <<"_T_" << temperature << "_.gas";      
+  outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";      
 
   // Setup the gas.
   MediumMagboltz* gas = new MediumMagboltz();
@@ -47,8 +47,8 @@ int main(int argc, char * argv[]) {
 
   // Flag to request logarithmic spacing.
   const bool useLog = false;
-  const double bmin=1;
-  const double bmax=1; // do we need magnetic field on?
+  const double bmin=0;
+  const double bmax=0; // do we need magnetic field on?
   const int nBFields=1;
   gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,TMath::Pi()/2.0,TMath::Pi()/2.0,1); 
 

@@ -86,24 +86,28 @@ int main(int argc, char * argv[]) {
   TH1F clustersizeused("clustersizeused","clustersizeused",1000,0.,100.);
 
   std::stringstream wid;
-  double max_y_i=0.5, max_z_i=0.5, stepy=0.05,stepz=0.05, min_y_i=-0.5;
-  double x_i=7.60249, y_i=min_y_i, z_i=-0.5, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0
+  //keeping x constant (y in HELIX)
+  //double max_y_i=0.25, max_z_i=0.25, stepy=0.01,stepz=0.01, min_y_i=-0.25;
+  //double x_i=7.60249, y_i=min_y_i, z_i=-0.25, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0
+  // keeping z constant (x in HELIX, along wire)
+  double max_y_i=0.3, max_x_i=0.03+0.5, stepy=0.1,stepx=0.005, min_y_i=-0.3;
+  double x_i=0.03+0.05, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
   // find the size of the vector we will be storing
-  int size_of_vec_in_y=(int)((max_y_i-y_i)/stepy);
+  int size_of_vec_in_y=(int)((max_y_i-y_i)/stepy)+1;
   std::cout << "size of vectors will be: " << size_of_vec_in_y << std::endl;
   std::cout << "max_y_i minus y_i will be: " << max_y_i-y_i << std::endl;
   std::cout << "max_y_i minus y_i/stepy will be: " << (max_y_i-y_i)/stepy << std::endl;
   std::cout << "casted max_y_i minus y_i/stepy will be: " << (max_y_i-y_i)/stepy << std::endl;
    //<< "," << new_average << "," << getSigma(electrons_drifted) << "," << y_i << "," << z_i << "," << x_i << std::endl;
 
-  std::ofstream outputfile("electron_drifttimes_coordinates_BOFF_with_distances_small_1000e_270P.txt");
+  std::ofstream outputfile("electron_drifttimes_coordinates_BOFF_with_distances_1000e_x_innerdriftA.txt");
   outputfile << "num_electrons,average,stddev,y,z,x,dx,dy,dz,sigx,sigy,sigz" << std::endl;
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(10);
   outputfile << std::fixed << std::showpoint;
   outputfile << std::setprecision(10);
   //name for drifttimes vs drift distance
-  std::ofstream statfile("electron_status_values_270P.txt");
+  //std::ofstream statfile("electron_status_values_100um_BOFF.txt");
 
 
   int pid = getpid();
@@ -161,7 +165,7 @@ int main(int argc, char * argv[]) {
   const double rCathode= 175e-4; // is this in centimeters? seems so
   const double vAnode= 0;
   const double rAnode= 20e-4;
-  const double vPotential= -270;
+  const double vPotential= -2700;
   const double rPotential= 175e-4;
   
   const double anodesep = 0.8;
@@ -252,7 +256,7 @@ int main(int argc, char * argv[]) {
     }
   }
   // really the x_i here is 7.62 but also subtract off the diameter of the cathode wire (2*rCathode)
-  while(z_i<=max_z_i){
+  while(x_i<=max_x_i){
     std::vector<double> num_electrons_y(size_of_vec_in_y);
     std::vector<double> average_y(size_of_vec_in_y);
     std::vector<double> stddev_y(size_of_vec_in_y);
@@ -294,6 +298,8 @@ int main(int argc, char * argv[]) {
         //std::cout << __LINE__ << std::endl;
 	      //int nelectronpoints = driftline->GetNumberOfElectronEndpoints();
 	      driftline->GetElectronEndpoint(0, xendpoint, yendpoint, zendpoint, tendpoint, xendpoint2, yendpoint2, zendpoint2, tendpoint2, stat);
+        //std::cout << "stat is: " << stat << std::endl;
+        //if(stat!=0) keep_running=false;
         curr_sig=tendpoint2-tendpoint;
         curr_x=xendpoint2-xendpoint;
         curr_y=yendpoint2-yendpoint;
@@ -302,9 +308,9 @@ int main(int argc, char * argv[]) {
         electrons_drifted_x.push_back(curr_x);
         electrons_drifted_y.push_back(curr_y);
         electrons_drifted_z.push_back(curr_z);
-        if(stat<0){
-          statfile << num_electrons << "," << stat << "," << y_i << "," << z_i << "," << curr_sig << "," << curr_x << "," << curr_y << "," << curr_z << std::endl;
-        }
+        //if(stat<0){
+        //  statfile << num_electrons << "," << stat << "," << y_i << "," << z_i << "," << curr_sig << "," << curr_x << "," << curr_y << "," << curr_z << std::endl;
+        //}
         num_electrons++;
         running_sum+=curr_sig;
         new_average=running_sum/num_electrons;
@@ -328,6 +334,7 @@ int main(int argc, char * argv[]) {
       std_x[iter_y]=getSigma(electrons_drifted_x);
       std_y[iter_y]=getSigma(electrons_drifted_y);
       std_z[iter_y]=getSigma(electrons_drifted_z);
+      std::cout << "iter_y" << iter_y << std::endl;
       y_i+=stepy;
       iter_y++;
     }
@@ -347,6 +354,8 @@ int main(int argc, char * argv[]) {
 
     int myval=0;
     while(myval<iter_y){
+      std::cout << "iter_y in writing output is " << iter_y << std::endl;
+      std::cout << "myval in writing value is " << myval << std::endl;
       outputfile << num_electrons_y[myval] << "," << average_y[myval] << "," << stddev_y[myval] << "," 
       << y_y[myval] << "," << z_y[myval] << "," << x_y[myval] << "," << avg_x[myval] << "," << avg_y[myval] << "," << avg_z[myval]
       << "," << std_x[myval] << "," << std_y[myval] << "," << std_z[myval]
@@ -357,13 +366,13 @@ int main(int argc, char * argv[]) {
       outputfile << a << "," << b << "," << c << "," << d << "," << e << "," << f << std::endl;
 
     }*/
-    z_i+=stepz;
+    x_i+=stepx;
     y_i=min_y_i;
   }
   //std::cout << "# Avalanched electrons: " << num_electrons << " ave sig is: " << running_average << " RMS is : " << getSigma(electrons_drifted) << std::endl;
-  
+  std::cout << "Closing file and finished run" << std:endl;
   outputfile.close();
-  statfile.close();
+  //statfile.close();
   app->Run(kTRUE);
   return 0;
 }

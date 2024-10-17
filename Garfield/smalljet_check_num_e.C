@@ -104,6 +104,7 @@ int main(int argc, char * argv[]) {
   outputfile << std::setprecision(10);
   //name for drifttimes vs drift distance
   std::ofstream statfile("electron_status_values_270P.txt");
+  std::ofstream numfile("electron_num_endpoints.txt");
 
 
   int pid = getpid();
@@ -292,7 +293,8 @@ int main(int argc, char * argv[]) {
         //std::cout << __LINE__ << std::endl;
 	      driftline->DriftElectron(x_i,y_i,z_i,0);
         //std::cout << __LINE__ << std::endl;
-	      //int nelectronpoints = driftline->GetNumberOfElectronEndpoints();
+	      int nelectronpoints = driftline->GetNumberOfElectronEndpoints();
+          numfile << num_electrons << "," << nelectronpoints << "," << y_i << "," << z_i << "," << curr_sig << "," << curr_x << "," << curr_y << "," << curr_z << std::endl;
 	      driftline->GetElectronEndpoint(0, xendpoint, yendpoint, zendpoint, tendpoint, xendpoint2, yendpoint2, zendpoint2, tendpoint2, stat);
         curr_sig=tendpoint2-tendpoint;
         curr_x=xendpoint2-xendpoint;
@@ -364,6 +366,7 @@ int main(int argc, char * argv[]) {
   
   outputfile.close();
   statfile.close();
+  numfile.close();
   app->Run(kTRUE);
   return 0;
 }
