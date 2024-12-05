@@ -13,5 +13,6 @@ RUN git clone https://gitlab.cern.ch/garfield/garfieldpp.git && \
     ln -s ${GARFIELD_HOME}/install/lib/* ${GARFIELD_HOME}/install/lib64/ 
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${GARFIELD_HOME}/install/lib
+ENV GARFIELD_IONDATA=${GARFIELD_HOME}/Data
 
 CMD [ "bash" ]
