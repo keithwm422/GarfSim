@@ -13,7 +13,7 @@ CXX = $(shell root-config --cxx)
 CXXFLAGS  = $(shell root-config --cflags)
 CXXFLAGS += -I$(INCDIR) -I$(DCsimINCDIR) -I$(HEEDDIR)
 # Code Generation and Optimization flags
-CXXFLAGS += -fno-common -fPIC -O3
+CXXFLAGS += -fno-common -fPIC -O3 -fopenmp
 # Warning flags
 CXXFLAGS += -W -Wall -Wextra -Wno-long-long
 # Debug flags
@@ -70,6 +70,18 @@ smalljet_drifttime_electron_only: smalljet_drifttime_electron_only.C
 smalljet_drifttime_electron_vs_coordinates: smalljet_drifttime_electron_vs_coordinates.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet_drifttime_electron_vs_coordinates_finegrid: smalljet_drifttime_electron_vs_coordinates_finegrid.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochron_generator: isochron_generator.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+field_map_gen: field_map_gen.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochron_gen_p: isochron_gen_p.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochron_gen_p_full: isochron_gen_p_full.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+avalanch_gain_calc: avalanch_gain_calc.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+avalanch_gain_calc_v2: avalanch_gain_calc_v2.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 gasgainstudy: gas_gain_study.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)

@@ -22,7 +22,7 @@ int main(int argc, char * argv[]) {
   double myvelocity;
   MediumMagboltz * gas = new MediumMagboltz();
 //  gas->LoadGasFile("Flight2024_Bgrid_P_755.865_T_293.15_.gas");
-  gas->LoadGasFile("Flight2024_BvsTstudy_P_755.865_T_283.15_.gas");
+  gas->LoadGasFile("Flight2024_Bon_P_755.865_T_283.15_.gas");
   gas->PrintGas();
   std::vector<double> efields;
   std::vector<double> bfields;

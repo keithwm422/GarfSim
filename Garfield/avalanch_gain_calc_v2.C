@@ -36,8 +36,8 @@
 #include <vector>
 #include <numeric>
 #include <iomanip>
-
-
+#include <omp.h>
+#include <chrono>
 
 using namespace Garfield;
 
@@ -61,6 +61,7 @@ double getSigma(const std::vector<double> &input){
 }
 
 int main(int argc, char * argv[]) {
+  auto start = std::chrono::high_resolution_clock::now();
   char * simoutFile;
   double trackx,trackang;
   int ntrack;
@@ -90,24 +91,41 @@ int main(int argc, char * argv[]) {
   //double max_y_i=0.25, max_z_i=0.25, stepy=0.01,stepz=0.01, min_y_i=-0.25;
   //double x_i=7.60249, y_i=min_y_i, z_i=-0.25, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0
   // keeping z constant (x in HELIX, along wire)
-  double max_y_i=0.3, max_x_i=0.03+0.5, stepy=0.1,stepx=0.005, min_y_i=-0.3;
-  double x_i=0.03+0.05, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+
+  //double max_y_i=1.0, max_x_i=0.03+0.5, stepy=0.1,stepx=0.005, min_y_i=-1.0;
+
+  //this was for isochron_generator_v2_BON
+  //double max_y_i=0.3, max_x_i=0.03+0.5, stepy=0.1,stepx=0.005, min_y_i=-0.3;
+  //double x_i=0.03+0.05, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+
+  //double x_i=0.03, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+
+  //double max_y_i=0.5, max_x_i=7.5, stepy=0.1,stepx=0.25, min_y_i=-0.5;
+  //double x_i=0.5, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+
+  // for the full view of the isochrons
+  const double max_y_i=1.0, max_x_i=7.5, stepy=0.1,stepx=0.025, min_y_i=-1.0;
+  const double x_i=-7.5, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+
   // find the size of the vector we will be storing
   int size_of_vec_in_y=(int)((max_y_i-y_i)/stepy)+1;
+  // for parallel, find the number of iterations we will be using to meet the x grid
+  int size_of_x_grid=(int)((max_x_i-x_i)/stepx)+1;
   std::cout << "size of vectors will be: " << size_of_vec_in_y << std::endl;
   std::cout << "max_y_i minus y_i will be: " << max_y_i-y_i << std::endl;
   std::cout << "max_y_i minus y_i/stepy will be: " << (max_y_i-y_i)/stepy << std::endl;
   std::cout << "casted max_y_i minus y_i/stepy will be: " << (max_y_i-y_i)/stepy << std::endl;
    //<< "," << new_average << "," << getSigma(electrons_drifted) << "," << y_i << "," << z_i << "," << x_i << std::endl;
 
-  std::ofstream outputfile("electron_drifttimes_innerdriftA_BON_T298.txt");
-  outputfile << "num_electrons,average,stddev,y,z,x,dx,dy,dz,sigx,sigy,sigz" << std::endl;
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(10);
+  std::ofstream outputfile("gain_calc_parallel.txt",std::ios_base::app);
+  outputfile << "num_electrons,average,stddev,y,z,x,dx,dy,dz,sigx,sigy,sigz,aval_e,aval_i" << std::endl;
   outputfile << std::fixed << std::showpoint;
   outputfile << std::setprecision(10);
+  outputfile.close();
   //name for drifttimes vs drift distance
-  //std::ofstream statfile("electron_status_values_100um_BOFF.txt");
+  //std::ofstream statfile("iso_status_checke_p.txt");
 
 
   int pid = getpid();
@@ -143,7 +161,7 @@ int main(int argc, char * argv[]) {
 
 //  gas->LoadGasFile("co2_90_AR_10_T273.gas");
 //  gas->LoadGasFile("keith_co2_85_AR_15_T273.gas");
-  gas->LoadGasFile("Flight2024_Bon_P_755.865_T_298.15_.gas");
+  gas->LoadGasFile("Flight2024_Bon_P_755.865_T_303.15_.gas");
 
   // lets just print out the drift velocity to a file?
 
@@ -153,7 +171,7 @@ int main(int argc, char * argv[]) {
 
   ComponentAnalyticField * cmp = new ComponentAnalyticField();
 //  cmp->SetMagneticField(0.,0.,0.0);
-  //cmp->SetMagneticField(0.,0.,1.0);
+  cmp->SetMagneticField(0.,0.,1.0);
 
   GeometrySimple * geo = new GeometrySimple();
  
@@ -230,21 +248,21 @@ int main(int argc, char * argv[]) {
   }
 
   Sensor * sensor = new Sensor;
-  ViewSignal * vs1 = new ViewSignal;
+  //ViewSignal * vs1 = new ViewSignal;
 
   sensor->AddComponent(cmp);
   sensor->SetTimeWindow(0,2,10000); // might need to change this, its start, step size, number of steps
   cmp->AddReadout("a");
   sensor->AddElectrode(cmp,"a");
-  vs1->SetSensor(sensor);
+  //vs1->SetSensor(sensor);
   
  
-  AvalancheMC * driftline = new AvalancheMC();
+  //AvalancheMC * driftline = new AvalancheMC();
   //  driftline->EnableDebugging();  
-  driftline->SetDistanceSteps(0.001);
+  //driftline->SetDistanceSteps(0.001);
   //driftline->EnableMagneticField();
-  driftline->EnableDiffusion();
-  driftline->SetSensor(sensor);
+  //driftline->EnableDiffusion();
+  //driftline->SetSensor(sensor);
   //  driftline->EnablePlotting(vd);
   //  driftline->EnableSignalCalculation();
   unsigned int ne=0, ni=0;
@@ -256,7 +274,13 @@ int main(int argc, char * argv[]) {
     }
   }
   // really the x_i here is 7.62 but also subtract off the diameter of the cathode wire (2*rCathode)
-  while(x_i<=max_x_i){
+  //while(x_i<=max_x_i){
+  omp_lock_t writelock;
+  omp_init_lock(&writelock);
+  #pragma omp parallel for
+  //for(double x_delt=x_i; x_delt<=max_x_i;x_delt+=stepx){
+  for(int ix=0;ix<size_of_x_grid;ix++){
+    double x_delt=x_i+((double)(ix)*stepx);
     std::vector<double> num_electrons_y(size_of_vec_in_y);
     std::vector<double> average_y(size_of_vec_in_y);
     std::vector<double> stddev_y(size_of_vec_in_y);
@@ -269,10 +293,26 @@ int main(int argc, char * argv[]) {
     std::vector<double> std_x(size_of_vec_in_y);
     std::vector<double> std_y(size_of_vec_in_y);
     std::vector<double> std_z(size_of_vec_in_y);
-
+    std::vector<double> e_a(size_of_vec_in_y);
+    std::vector<double> i_a(size_of_vec_in_y);
     int iter_y=0;
-    while(y_i<=max_y_i){
+    AvalancheMicroscopic * aval = new AvalancheMicroscopic();
+    //  driftline->EnableDebugging();  
+    //driftline->SetDistanceSteps(0.001);
+    //driftline->EnableMagneticField();
+    //driftline->EnableDiffusion();
+    //driftline->EnableAttachment();
+    aval->SetSensor(sensor);
+    //aval->EnableAvalancheSizeLimit(1000);
+    //  driftline->EnablePlotting(vd);
+    //  driftline->EnableSignalCalculation();
+    unsigned int ne=0, ni=0;
+
+    //while(y_i<=max_y_i){
+    for(int iy=0;iy<size_of_vec_in_y;iy++){
+      double y_delt=y_i+((double)(iy)*stepy);
       int num_electrons=0;
+      int ne_av=0, ni_av=0;
       double min_variation=0.1;
       double running_sum=0;
       double running_average=0;
@@ -282,23 +322,32 @@ int main(int argc, char * argv[]) {
       double curr_y=0;
       double curr_z=0;
       bool keep_running=true;
+      bool is_pos_borked=false;
       std::vector<double> electrons_drifted_t;
       std::vector<double> electrons_drifted_x;
       std::vector<double> electrons_drifted_y;
       std::vector<double> electrons_drifted_z;
-      while(keep_running){
+      std::vector<double> e_aval;
+      std::vector<double> i_aval;
+      while(keep_running && !is_pos_borked){
         double xendpoint = 0, yendpoint = 0, zendpoint=0;
         double xendpoint2 = 0, yendpoint2 = 0, zendpoint2=0;
         double tendpoint = 0, tendpoint2 = 0;
+        double energy0=0,energy1=0;
 	      //track->GetElectron(i,x,y,z,t,e,dx,dy,dz);
         int stat=0;
 	      //outputfilegetelectron << "startpoint" << i  << " of " << ncl << "  electrons " << x << " " << y << " " << z << " " << t << " " << e << " " << dx << " " << dy << " " << dz << std::endl;
         //std::cout << __LINE__ << std::endl;
-	      driftline->DriftElectron(x_i,y_i,z_i,0);
+	//bool did_it_drift=driftline->DriftElectron(x_delt,y_delt,z_i,0);
+	bool did_it_drift=aval->AvalancheElectron(x_delt,y_delt,z_i,0,0,0,0,0);
+        if(!did_it_drift) is_pos_borked=true;
         //std::cout << __LINE__ << std::endl;
 	      //int nelectronpoints = driftline->GetNumberOfElectronEndpoints();
-	      driftline->GetElectronEndpoint(0, xendpoint, yendpoint, zendpoint, tendpoint, xendpoint2, yendpoint2, zendpoint2, tendpoint2, stat);
-        //std::cout << "stat is: " << stat << std::endl;
+	      aval->GetElectronEndpoint(0, xendpoint, yendpoint, zendpoint, tendpoint, energy0,xendpoint2, yendpoint2, zendpoint2, tendpoint2, energy1, stat);
+        aval->GetAvalancheSize(ne_av,ni_av);
+        std::cout << "stat is: " << stat << ", x_delt is " << x_delt << ", y_delt is " << y_delt << std::endl;
+        std::cout << "num_electrons is: " << num_electrons << std::endl;
+        //if(ne_av>1) std::cout << "ne_av,ni_av is: " << ne_av << "," << ni_av << std::endl;
         //if(stat!=0) keep_running=false;
         curr_sig=tendpoint2-tendpoint;
         curr_x=xendpoint2-xendpoint;
@@ -308,35 +357,67 @@ int main(int argc, char * argv[]) {
         electrons_drifted_x.push_back(curr_x);
         electrons_drifted_y.push_back(curr_y);
         electrons_drifted_z.push_back(curr_z);
+        e_aval.push_back(ne_av);
+        i_aval.push_back(ni_av);
         //if(stat<0){
-        //  statfile << num_electrons << "," << stat << "," << y_i << "," << z_i << "," << curr_sig << "," << curr_x << "," << curr_y << "," << curr_z << std::endl;
+        //  statfile << num_electrons << "," << stat << "," << y_delt << "," << z_i << "," << curr_sig << "," << curr_x << "," << curr_y << "," << curr_z << std::endl;
+        //  is_pos_borked=true;
         //}
         num_electrons++;
         running_sum+=curr_sig;
         new_average=running_sum/num_electrons;
-        if(num_electrons>1000 && TMath::Abs((new_average-running_average)/running_average)<=min_variation) keep_running=false;
+        if(num_electrons>1000){
+          if(TMath::Abs((new_average-running_average)/running_average)<=min_variation) keep_running=false;
+          else is_pos_borked=true;
+        }
+        //if(num_electrons>1000 && TMath::Abs((new_average-running_average)/running_average)<=min_variation) keep_running=false;
+        //if(num_electrons>2) keep_running=false;
         else{
           // compute the average some more
           running_average=new_average;
         }
       }
       // write these out to vectors to spit out to file at the end
-      //outputfile << num_electrons << "," << new_average << "," << getSigma(electrons_drifted) << "," << y_i << "," << z_i << "," << x_i << std::endl;
-      num_electrons_y[iter_y]=num_electrons;
-      average_y[iter_y]=new_average;
-      stddev_y[iter_y]=getSigma(electrons_drifted_t);
-      y_y[iter_y]=y_i;
-      z_y[iter_y]=z_i;
-      x_y[iter_y]=x_i;
-      avg_x[iter_y]=getMean(electrons_drifted_x);
-      avg_y[iter_y]=getMean(electrons_drifted_y);
-      avg_z[iter_y]=getMean(electrons_drifted_z);
-      std_x[iter_y]=getSigma(electrons_drifted_x);
-      std_y[iter_y]=getSigma(electrons_drifted_y);
-      std_z[iter_y]=getSigma(electrons_drifted_z);
-      std::cout << "iter_y" << iter_y << std::endl;
-      y_i+=stepy;
-      iter_y++;
+      //outputfile << num_electrons << "," << new_average << "," << getSigma(electrons_drifted) << "," << y_delt << "," << z_i << "," << x_delt << std::endl;
+      if(is_pos_borked){
+        std::cout << "x,y borked is " << x_delt << "," << y_delt << std::endl;
+        //std::cout << "ypos borked is " << iter_y << std::endl;
+        num_electrons_y[iter_y]=-666.0;
+        average_y[iter_y]=-666.0;
+        stddev_y[iter_y]=-666.0;
+        y_y[iter_y]=y_delt;
+        z_y[iter_y]=z_i;
+        x_y[iter_y]=x_delt;
+        avg_x[iter_y]=-666.0;
+        avg_y[iter_y]=-666.0;
+        avg_z[iter_y]=-666.0;
+        std_x[iter_y]=-666.0;
+        std_y[iter_y]=-666.0;
+        std_z[iter_y]=-666.0;
+        e_a[iter_y]=-666.0;
+        i_a[iter_y]=-666.0;
+        //y_delt+=stepy;
+        iter_y++;
+      }
+      else{
+        num_electrons_y[iter_y]=num_electrons;
+        average_y[iter_y]=new_average;
+        stddev_y[iter_y]=getSigma(electrons_drifted_t);
+        y_y[iter_y]=y_delt;
+        z_y[iter_y]=z_i;
+        x_y[iter_y]=x_delt;
+        avg_x[iter_y]=getMean(electrons_drifted_x);
+        avg_y[iter_y]=getMean(electrons_drifted_y);
+        avg_z[iter_y]=getMean(electrons_drifted_z);
+        std_x[iter_y]=getSigma(electrons_drifted_x);
+        std_y[iter_y]=getSigma(electrons_drifted_y);
+        std_z[iter_y]=getSigma(electrons_drifted_z);
+        e_a[iter_y]=getMean(e_aval);
+        i_a[iter_y]=getMean(i_aval);
+        //std::cout << "iter_y" << iter_y << std::endl;
+        //y_i+=stepy;
+        iter_y++;
+      }
     }
     // dump to file
     auto itA = num_electrons_y.begin();
@@ -351,14 +432,19 @@ int main(int argc, char * argv[]) {
     auto itJ = std_x.begin();
     auto itK = std_y.begin();
     auto itL = std_z.begin();
+    auto itM = e_a.begin();
+    auto itN = i_a.begin();
 
     int myval=0;
+    //if(is_pos_borked) iter_y=0;
+    omp_set_lock(&writelock);
+    outputfile.open("gain_calc_parallel.txt",std::ios_base::app);
     while(myval<iter_y){
-      std::cout << "iter_y in writing output is " << iter_y << std::endl;
-      std::cout << "myval in writing value is " << myval << std::endl;
+      //std::cout << "iter_y in writing output is " << iter_y << std::endl;
+      //std::cout << "myval in writing value is " << myval << std::endl;
       outputfile << num_electrons_y[myval] << "," << average_y[myval] << "," << stddev_y[myval] << "," 
       << y_y[myval] << "," << z_y[myval] << "," << x_y[myval] << "," << avg_x[myval] << "," << avg_y[myval] << "," << avg_z[myval]
-      << "," << std_x[myval] << "," << std_y[myval] << "," << std_z[myval]
+      << "," << std_x[myval] << "," << std_y[myval] << "," << std_z[myval] << "," << e_a[myval] << "," << i_a[myval]
       << std::endl;
       myval++;
     }
@@ -366,12 +452,20 @@ int main(int argc, char * argv[]) {
       outputfile << a << "," << b << "," << c << "," << d << "," << e << "," << f << std::endl;
 
     }*/
-    x_i+=stepx;
-    y_i=min_y_i;
+    //x_i+=stepx;
+    outputfile.close();
+    omp_unset_lock(&writelock);
+    //y_i=min_y_i;
+    //delete driftline;
+    delete aval;
   }
   //std::cout << "# Avalanched electrons: " << num_electrons << " ave sig is: " << running_average << " RMS is : " << getSigma(electrons_drifted) << std::endl;
+ auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::cout << "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
   std::cout << "Closing file and finished run" << std::endl;
-  outputfile.close();
+  omp_destroy_lock(&writelock);
+  //outputfile.close();
   //statfile.close();
   app->Run(kTRUE);
   return 0;
