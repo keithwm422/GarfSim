@@ -104,12 +104,16 @@ int main(int argc, char * argv[]) {
   //double x_i=0.5, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
 
   // for the full view of the isochrons
-  const double max_y_i=1.0, max_x_i=7.5, stepy=0.1,stepx=0.025, min_y_i=-1.0;
-  const double x_i=-7.5, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+  //const double max_y_i=1.0, max_x_i=7.5, stepy=0.1,stepx=0.025, min_y_i=-1.0;
+  //const double x_i=-7.5, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
 
   // for the gain calculation of the DCT
   //const double max_y_i=0.1, max_x_i=7.5, stepy=0.1,stepx=0.025, min_y_i=0.0;
   //const double x_i=7.45, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+
+  // for the drift time vs temp calculation of the DCT
+  const double max_y_i=1.0, max_x_i=7.60249, stepy=0.1,stepx=0.25, min_y_i=-1.0;
+  const double x_i=7.60249, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
 
   // find the size of the vector we will be storing
   int size_of_vec_in_y=(int)((max_y_i-y_i)/stepy)+1;
@@ -123,7 +127,7 @@ int main(int argc, char * argv[]) {
 
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(10);
-  std::ofstream outputfile("gain_calc_parallel_v2_BON.txt",std::ios_base::app);
+  std::ofstream outputfile("avalmicro_calc_parallel_BON_T303.txt",std::ios_base::app);
   outputfile << "num_electrons,average,stddev,y,z,x,dx,dy,dz,sigx,sigy,sigz,aval_e,aval_i" << std::endl;
   outputfile << std::fixed << std::showpoint;
   outputfile << std::setprecision(10);
@@ -252,25 +256,11 @@ int main(int argc, char * argv[]) {
   }
 
   Sensor * sensor = new Sensor;
-  //ViewSignal * vs1 = new ViewSignal;
-
   sensor->AddComponent(cmp);
   sensor->SetTimeWindow(0,2,20000); // might need to change this, its start, step size, number of steps
   cmp->AddReadout("a");
   sensor->AddElectrode(cmp,"a");
-  //vs1->SetSensor(sensor);
-  
- 
-  //AvalancheMC * driftline = new AvalancheMC();
-  //  driftline->EnableDebugging();  
-  //driftline->SetDistanceSteps(0.001);
-  //driftline->EnableMagneticField();
-  //driftline->EnableDiffusion();
-  //driftline->SetSensor(sensor);
-  //  driftline->EnablePlotting(vd);
-  //  driftline->EnableSignalCalculation();
   unsigned int ne=0, ni=0;
-
   for (int iplane=0;iplane<1;iplane++){
     for (int iw =0;iw<7;iw++){
       int iadd = iplane*7 + iw;
@@ -323,7 +313,7 @@ int main(int argc, char * argv[]) {
       double y_delt=y_i+((double)(iy)*stepy);
       int num_electrons=0;
       int ne_av=0, ni_av=0;
-      double min_variation=0.1;
+      double min_variation=100.0;
       double running_sum=0;
       double running_average=0;
       double new_average=0;
@@ -376,7 +366,7 @@ int main(int argc, char * argv[]) {
         num_electrons++;
         running_sum+=curr_sig;
         new_average=running_sum/num_electrons;
-        if(num_electrons>100){
+        if(num_electrons>10){
           if(TMath::Abs((new_average-running_average)/running_average)<=min_variation) keep_running=false;
           else is_pos_borked=true;
         }
@@ -448,7 +438,7 @@ int main(int argc, char * argv[]) {
     int myval=0;
     //if(is_pos_borked) iter_y=0;
     omp_set_lock(&writelock);
-    outputfile.open("gain_calc_parallel_v2_BON.txt",std::ios_base::app);
+    outputfile.open("avalmicro_calc_parallel_BON_T303.txt",std::ios_base::app);
     while(myval<iter_y){
       //std::cout << "iter_y in writing output is " << iter_y << std::endl;
       //std::cout << "myval in writing value is " << myval << std::endl;

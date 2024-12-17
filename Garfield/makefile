@@ -83,6 +83,10 @@ avalanch_gain_calc: avalanch_gain_calc.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 avalanch_gain_calc_v2: avalanch_gain_calc_v2.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+avalanch_drifttime_vs_temp: avalanch_drifttime_vs_temp.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+avalanch_drifttime_vs_temp_v2: avalanch_drifttime_vs_temp_v2.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 gasgainstudy: gas_gain_study.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet_fieldplots: smalljet_fieldplots.C

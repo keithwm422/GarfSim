@@ -61,6 +61,22 @@ double getSigma(const std::vector<double> &input){
 }
 
 int main(int argc, char * argv[]) {
+
+  // TApplication app("app", &argc, argv);
+  double invals[10]={0};
+  for(int i = 1; i < argc; i++){
+    invals[i-1] = atof(argv[i]);
+    std::cout << invals[i-1] << std::endl;
+  }
+//  const double pressure = 1 * AtmosphericPressure; // in torr- we were at 14.6 psi (1 psi = 51.7149 torr)
+  const double pressure = invals[0]*51.7149; // in torr- we were at 14.6 psi (1 psi = 51.7149 torr)
+  std::cout << "pressure in torr: " << pressure << std::endl;
+  const double temperature = invals[1];
+  std::cout << "temperature in kelvin: " << temperature << std::endl;
+  std::stringstream ingasfilename;
+  //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";
+  ingasfilename << "Flight2024_Bon_P_755.865_T_" << temperature << ".15_.gas";
+
   auto start = std::chrono::high_resolution_clock::now();
   char * simoutFile;
   double trackx,trackang;
@@ -87,29 +103,10 @@ int main(int argc, char * argv[]) {
   TH1F clustersizeused("clustersizeused","clustersizeused",1000,0.,100.);
 
   std::stringstream wid;
-  //keeping x constant (y in HELIX)
-  //double max_y_i=0.25, max_z_i=0.25, stepy=0.01,stepz=0.01, min_y_i=-0.25;
-  //double x_i=7.60249, y_i=min_y_i, z_i=-0.25, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0
-  // keeping z constant (x in HELIX, along wire)
 
-  //double max_y_i=1.0, max_x_i=0.03+0.5, stepy=0.1,stepx=0.005, min_y_i=-1.0;
-
-  //this was for isochron_generator_v2_BON
-  //double max_y_i=0.3, max_x_i=0.03+0.5, stepy=0.1,stepx=0.005, min_y_i=-0.3;
-  //double x_i=0.03+0.05, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
-
-  //double x_i=0.03, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
-
-  //double max_y_i=0.5, max_x_i=7.5, stepy=0.1,stepx=0.25, min_y_i=-0.5;
-  //double x_i=0.5, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
-
-  // for the full view of the isochrons
-  const double max_y_i=1.0, max_x_i=7.5, stepy=0.1,stepx=0.025, min_y_i=-1.0;
-  const double x_i=-7.5, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
-
-  // for the gain calculation of the DCT
-  //const double max_y_i=0.1, max_x_i=7.5, stepy=0.1,stepx=0.025, min_y_i=0.0;
-  //const double x_i=7.45, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
+  // for the drift time vs temp calculation of the DCT
+  const double max_y_i=1.0, max_x_i=7.60249, stepy=0.1,stepx=0.25, min_y_i=-1.0;
+  const double x_i=7.60249, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
 
   // find the size of the vector we will be storing
   int size_of_vec_in_y=(int)((max_y_i-y_i)/stepy)+1;
@@ -123,7 +120,11 @@ int main(int argc, char * argv[]) {
 
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(10);
-  std::ofstream outputfile("gain_calc_parallel_v2_BON.txt",std::ios_base::app);
+  std::stringstream outputfilename;
+  //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";
+  outputfilename << "avalmicro_calc_parallel_BON_v2_T" << temperature << ".txt";
+  std::ofstream outputfile(outputfilename.str().c_str(),std::ios_base::app);
+
   outputfile << "num_electrons,average,stddev,y,z,x,dx,dy,dz,sigx,sigy,sigz,aval_e,aval_i" << std::endl;
   outputfile << std::fixed << std::showpoint;
   outputfile << std::setprecision(10);
@@ -155,24 +156,25 @@ int main(int argc, char * argv[]) {
   MediumMagboltz * gas = new MediumMagboltz();
 
   // Setup the gas
-  const double pressure = 760.; //Torr
-  const double temperature = 293.15; //K
+  //const double pressure = 760.; //Torr
+  //const double temperature = 293.15; //K
  
   // Set the temperature [K] and pressure [Torr]
-  gas->SetTemperature(temperature);
-  gas->SetPressure(pressure);
-  gas->SetComposition("co2", 85, "ar", 15);
+  //gas->SetTemperature(temperature);
+  //gas->SetPressure(pressure);
+  //gas->SetComposition("co2", 85, "ar", 15);
 
 //  gas->LoadGasFile("co2_90_AR_10_T273.gas");
 //  gas->LoadGasFile("keith_co2_85_AR_15_T273.gas");
-  gas->LoadGasFile("Flight2024_Bon_P_755.865_T_303.15_.gas");
+//  gas->LoadGasFile("Flight2024_Bon_P_755.865_T_298.15_.gas");
+  gas->LoadGasFile(ingasfilename.str());
 
   // lets just print out the drift velocity to a file?
 
   char * IonData = getenv("GARFIELD_IONDATA") ;
   gas->LoadIonMobility(IonData);
   gas->PrintGas();
-
+  //return 0;
   ComponentAnalyticField * cmp = new ComponentAnalyticField();
 //  cmp->SetMagneticField(0.,0.,0.0);
   cmp->SetMagneticField(0.,0.,1.0);
@@ -252,25 +254,11 @@ int main(int argc, char * argv[]) {
   }
 
   Sensor * sensor = new Sensor;
-  //ViewSignal * vs1 = new ViewSignal;
-
   sensor->AddComponent(cmp);
   sensor->SetTimeWindow(0,2,20000); // might need to change this, its start, step size, number of steps
   cmp->AddReadout("a");
   sensor->AddElectrode(cmp,"a");
-  //vs1->SetSensor(sensor);
-  
- 
-  //AvalancheMC * driftline = new AvalancheMC();
-  //  driftline->EnableDebugging();  
-  //driftline->SetDistanceSteps(0.001);
-  //driftline->EnableMagneticField();
-  //driftline->EnableDiffusion();
-  //driftline->SetSensor(sensor);
-  //  driftline->EnablePlotting(vd);
-  //  driftline->EnableSignalCalculation();
   unsigned int ne=0, ni=0;
-
   for (int iplane=0;iplane<1;iplane++){
     for (int iw =0;iw<7;iw++){
       int iadd = iplane*7 + iw;
@@ -448,7 +436,7 @@ int main(int argc, char * argv[]) {
     int myval=0;
     //if(is_pos_borked) iter_y=0;
     omp_set_lock(&writelock);
-    outputfile.open("gain_calc_parallel_v2_BON.txt",std::ios_base::app);
+    outputfile.open(outputfilename.str().c_str(),std::ios_base::app);
     while(myval<iter_y){
       //std::cout << "iter_y in writing output is " << iter_y << std::endl;
       //std::cout << "myval in writing value is " << myval << std::endl;
