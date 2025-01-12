@@ -79,6 +79,8 @@ isochron_gen_p: isochron_gen_p.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 isochron_gen_p_full: isochron_gen_p_full.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochron_gen_p_full_compare:  isochron_gen_p_full_compare.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 avalanch_gain_calc: avalanch_gain_calc.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 avalanch_gain_calc_v2: avalanch_gain_calc_v2.C
@@ -86,6 +88,8 @@ avalanch_gain_calc_v2: avalanch_gain_calc_v2.C
 avalanch_drifttime_vs_temp: avalanch_drifttime_vs_temp.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 avalanch_drifttime_vs_temp_v2: avalanch_drifttime_vs_temp_v2.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+test_aval_micro: test_aval_micro.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 gasgainstudy: gas_gain_study.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
