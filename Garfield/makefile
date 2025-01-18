@@ -89,11 +89,17 @@ avalanch_drifttime_vs_temp: avalanch_drifttime_vs_temp.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 avalanch_drifttime_vs_temp_v2: avalanch_drifttime_vs_temp_v2.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+avalMC_dt_vs_temp: avalMC_dt_vs_temp.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 test_aval_micro: test_aval_micro.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 gasgainstudy: gas_gain_study.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet_fieldplots: smalljet_fieldplots.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+eField_plotter: eField_plotter.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochronGenerator_p_fullEfield: isochronGenerator_p_fullEfield.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 printgas: printgas.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)

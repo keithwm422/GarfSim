@@ -21,8 +21,15 @@ int main(int argc, char * argv[]) {
   }
   double myvelocity;
   MediumMagboltz * gas = new MediumMagboltz();
-//  gas->LoadGasFile("Flight2024_Bgrid_P_755.865_T_293.15_.gas");
-  gas->LoadGasFile("Flight2024_Bon_P_755.865_T_283.15_.gas");
+  gas->EnableDebugging();
+  //gas->LoadGasFile("Flight2024_Bgrid_P_755.865_T_293.15_.gas");
+  //gas->LoadGasFile("Flight2024_Bon_P_755.865_T_283.15_.gas");
+  //gas->LoadGasFile("Flight2024_Bon_P_755.865_T_303.15_multiE.gas");
+  //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_303.15_multiE_maxE2000.gas");
+  //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
+  //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
+  //gas->LoadGasFile("Flight2024_Bon_multiB_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
+  gas->LoadGasFile("Flight2024_Boff_P_755.865_T_303.15_multiE_90CO2_10Ar_01122024.gas");
   gas->PrintGas();
   std::vector<double> efields;
   std::vector<double> bfields;
