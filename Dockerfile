@@ -1,7 +1,9 @@
 FROM rootproject/root:6.32.04-ubuntu24.04
 
 
+ENV ROOTSYS=/opt/root/
 ENV GARFIELD_HOME=/opt/garfieldpp
+ENV LD_LIBRARY_PATH=/lib:/lib64:/usr/lib:/opt/root/lib:$LD_LIBRARY_PATH
 
 WORKDIR /opt/
 
