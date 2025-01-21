@@ -29,11 +29,27 @@ LDLIBS +=  -lGeom
 
 garfroot: garfroot.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+Csv_driftv_vs_efield: Csv_driftv_vs_efield.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+Csv_drift_vs_Temp: Csv_drift_vs_Temp.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+Csv_drift_vs_gascomp: Csv_drift_vs_gascomp.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+LoadGasFile: LoadGasFile.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 MakeGasFile: MakeGasFile.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+MakeGasFile_2: MakeGasFile_2.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+MakeGasFile_3: MakeGasFile_3.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+MakeGasFile_flight: MakeGasFile_flight.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 jet: jet.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet: smalljet.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+gasgainstudy: gas_gain_study.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 smalljet_fieldplots: smalljet_fieldplots.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)

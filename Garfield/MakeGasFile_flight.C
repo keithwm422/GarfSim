@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include <TCanvas.h>
 #include <TROOT.h>
@@ -13,10 +14,19 @@ using namespace Garfield;
 int main(int argc, char * argv[]) {
 
   // TApplication app("app", &argc, argv);
- 
-  const double pressure = 1 * AtmosphericPressure;
-  const double temperature = 273.15;
- 
+  double invals[10]={0};
+  for(int i = 1; i < argc; i++){
+    invals[i-1] = atof(argv[i]);
+    std::cout << invals[i-1] << std::endl;
+  }
+//  const double pressure = 1 * AtmosphericPressure; // in torr- we were at 14.6 psi (1 psi = 51.7149 torr) 
+  const double pressure = invals[0]*51.7149; // in torr- we were at 14.6 psi (1 psi = 51.7149 torr) 
+  std::cout << "pressure in torr: " << pressure << std::endl;
+  const double temperature = 273.15 + invals[1];
+  std::cout << "temperature in kelvin: " << temperature << std::endl;
+  std::stringstream outfilename;
+  outfilename << "Flight2024_P_" << pressure <<" _T_" << temperature << "_.gas";      
+
   // Setup the gas.
   MediumMagboltz* gas = new MediumMagboltz();
   gas->SetTemperature(temperature);
@@ -30,7 +40,7 @@ int main(int argc, char * argv[]) {
   // Flag to request logarithmic spacing.
   const bool useLog = true;
   const double bmin=0;
-  const double bmax=0;
+  const double bmax=0; // do we need magnetic field on?
   const int nBFields=1;
   gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,TMath::Pi()/2.0,TMath::Pi()/2.0,1); 
 
@@ -41,7 +51,7 @@ int main(int argc, char * argv[]) {
   gas->GenerateGasTable(ncoll);
   gas->DisableDebugging();
   // Save the table. 
-  gas->WriteGasFile("keith_co2_90_AR_10_T273.gas");
+  gas->WriteGasFile(outfilename.str());
 
   // app.Run(kTRUE);
 
