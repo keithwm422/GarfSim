@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: rootproject/root:6.32.04-ubuntu24.04
+Stage: build
+
+
+%environment 
+    export ROOTSYS=/opt/root/
+    export GARFIELD_HOME=/opt/garfieldpp
+    export LD_LIBRARY_PATH=/lib:/lib64:/usr/lib:/opt/root/lib:$LD_LIBRARY_PATH
+    export GARFIELD_IONDATA=${GARFIELD_HOME}/Data
+
+
+
+
+
+%post
+
+    export GARFIELD_HOME=/opt/garfieldpp
+    export LD_LIBRARY_PATH=/lib:/lib64:/usr/lib:/opt/root/lib:$LD_LIBRARY_PATH
+    export GARFIELD_IONDATA=${GARFIELD_HOME}/Data
+
+    git clone https://gitlab.cern.ch/garfield/garfieldpp.git && \
+        cd garfieldpp && mkdir build && cd build && \
+        cmake -DCMAKE_INSTALL_PREFIX=${GARFIELD_HOME}/install .. && \
+        make -j $(nproc) && make install && \
+        mkdir ${GARFIELD_HOME}/install/lib64/ && \
+        ln -s ${GARFIELD_HOME}/install/lib/* ${GARFIELD_HOME}/install/lib64/ 
+
+        
