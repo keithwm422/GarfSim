@@ -72,14 +72,7 @@ C_RET="\033[1;39m"
 
 #target_dir="data/stg0"
 
-#[2] Process stg0 laser
-for j in {20..21..2}
-do
-  check
-  #execute "stg0_to_stg1_converter.exe $stg0f -o $stg1f > $stg1l &"
-  execute "./MakeGasFile_flight 14.616 $j &"
-  echo $j
-  #execute "stg0_to_stg1_converter.exe --max-skew -1 $stg0f > $stg1l &"
-done
+check
+execute "./isochronGenerator_p_fullEfield 14.616 293 &"
 wait
 

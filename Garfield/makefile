@@ -101,6 +101,12 @@ eField_plotter: eField_plotter.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 isochronGenerator_p_fullEfield: isochronGenerator_p_fullEfield.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochronGenerator_p_fullEfield_v2: isochronGenerator_p_fullEfield_v2.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochronGenerator_p_fullEfield_debug: isochronGenerator_p_fullEfield_debug.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochronGenerator_mullti: isochronGenerator_mullti.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 printgas: printgas.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 full_tpc_sim:	full_tpc_sim.C

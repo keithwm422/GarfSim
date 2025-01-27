@@ -119,13 +119,16 @@ int main(int argc, char * argv[]) {
   std::cout << std::setprecision(10);
   std::stringstream outputfilename;
   //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";
-  outputfilename << "isochronGenerator_p_fullEfield_T" << temperature << ".txt";
+  outputfilename << "isochronGenerator_p_fullEfield_T" << temperature << "_v2.txt";
   std::ofstream outputfile(outputfilename.str().c_str(),std::ios_base::app);
 
   outputfile << "num_electrons,average,stddev,y,z,x,dx,dy,dz,sigx,sigy,sigz" << std::endl;
   outputfile << std::fixed << std::showpoint;
   outputfile << std::setprecision(10);
   outputfile.close();
+  TH1D * stat_h = new TH1D("status","status",20,-19.5,0.5);
+  TH1D * drifttime_h = new TH1D("drifttime_distr","drifttime_distr",1500,-0.5,14999.5);
+  TFile * Outfile = new TFile("isochron_distr_v2.root","recreate");
   int pid = getpid();
   timeval t;
   gettimeofday(&t, NULL);
@@ -262,37 +265,36 @@ int main(int argc, char * argv[]) {
   //while(x_i<=max_x_i){
   omp_lock_t writelock;
   omp_init_lock(&writelock);
-  #pragma omp parallel for
+  #pragma omp parallel for collapse(2)
   //for(double x_delt=x_i; x_delt<=max_x_i;x_delt+=stepx){
   for(int ix=0;ix<size_of_x_grid;ix++){
-    double x_delt=x_i+((double)(ix)*stepx);
-    std::vector<double> num_electrons_y(size_of_vec_in_y);
-    std::vector<double> average_y(size_of_vec_in_y);
-    std::vector<double> stddev_y(size_of_vec_in_y);
-    std::vector<double> y_y(size_of_vec_in_y);
-    std::vector<double> z_y(size_of_vec_in_y);
-    std::vector<double> x_y(size_of_vec_in_y);
-    std::vector<double> avg_x(size_of_vec_in_y);
-    std::vector<double> avg_y(size_of_vec_in_y);
-    std::vector<double> avg_z(size_of_vec_in_y);
-    std::vector<double> std_x(size_of_vec_in_y);
-    std::vector<double> std_y(size_of_vec_in_y);
-    std::vector<double> std_z(size_of_vec_in_y);
-    std::vector<double> e_a(size_of_vec_in_y);
-    std::vector<double> i_a(size_of_vec_in_y);
-    int iter_y=0;
-    AvalancheMC * driftline = new AvalancheMC();
-    //  driftline->EnableDebugging();
-    driftline->SetDistanceSteps(0.001);
-    //driftline->EnableMagneticField();
-    driftline->EnableDiffusion();
-    driftline->SetSensor(sensor);
-    //  driftline->EnablePlotting(vd);
-    //  driftline->EnableSignalCalculation();
-    unsigned int ne=0, ni=0;
-
     for(int iy=0;iy<size_of_vec_in_y;iy++){
+      double x_delt=x_i+((double)(ix)*stepx);
       double y_delt=y_i+((double)(iy)*stepy);
+      AvalancheMC * driftline = new AvalancheMC();
+      //  driftline->EnableDebugging();
+      driftline->SetDistanceSteps(0.001);
+      //driftline->EnableMagneticField();
+      driftline->EnableDiffusion();
+      driftline->SetSensor(sensor);
+      //  driftline->EnablePlotting(vd);
+      //  driftline->EnableSignalCalculation();
+      unsigned int ne=0, ni=0;
+      double num_electrons_y;
+      double average_y;
+      double stddev_y;
+      double y_y;
+      double z_y;
+      double x_y;
+      double avg_x;
+      double avg_y;
+      double avg_z;
+      double std_x;
+      double std_y;
+      double std_z;
+      double e_a;
+      double i_a;
+      int iter_y=0;
       int num_electrons=0;
       int ne_av=0, ni_av=0;
       double min_variation=0.1;
@@ -330,6 +332,10 @@ int main(int argc, char * argv[]) {
         curr_x=xendpoint2-xendpoint;
         curr_y=yendpoint2-yendpoint;
         curr_z=zendpoint2-zendpoint;
+        if(iy==10 && ix==0){
+          drifttime_h->Fill(curr_sig);
+          stat_h->Fill(stat);
+        }
         electrons_drifted_t.push_back(curr_sig);
         electrons_drifted_x.push_back(curr_x);
         electrons_drifted_y.push_back(curr_y);
@@ -351,83 +357,59 @@ int main(int argc, char * argv[]) {
           // compute the average some more
           running_average=new_average;
         }
-      }
+      }// end of while loop? now we write to file?
       // write these out to vectors to spit out to file at the end
       //outputfile << num_electrons << "," << new_average << "," << getSigma(electrons_drifted) << "," << y_delt << "," << z_i << "," << x_delt << std::endl;
       if(is_pos_borked){
         std::cout << "x,y borked is " << x_delt << "," << y_delt << std::endl;
         //std::cout << "ypos borked is " << iter_y << std::endl;
-        num_electrons_y[iter_y]=-666.0;
-        average_y[iter_y]=-666.0;
-        stddev_y[iter_y]=-666.0;
-        y_y[iter_y]=y_delt;
-        z_y[iter_y]=z_i;
-        x_y[iter_y]=x_delt;
-        avg_x[iter_y]=-666.0;
-        avg_y[iter_y]=-666.0;
-        avg_z[iter_y]=-666.0;
-        std_x[iter_y]=-666.0;
-        std_y[iter_y]=-666.0;
-        std_z[iter_y]=-666.0;
+        num_electrons_y=-666.0;
+        average_y=-666.0;
+        stddev_y=-666.0;
+        y_y=y_delt;
+        z_y=z_i;
+        x_y=x_delt;
+        avg_x=-666.0;
+        avg_y=-666.0;
+        avg_z=-666.0;
+        std_x=-666.0;
+        std_y=-666.0;
+        std_z=-666.0;
         //y_delt+=stepy;
         iter_y++;
       }
       else{
-        num_electrons_y[iter_y]=num_electrons;
-        average_y[iter_y]=new_average;
-        stddev_y[iter_y]=getSigma(electrons_drifted_t);
-        y_y[iter_y]=y_delt;
-        z_y[iter_y]=z_i;
-        x_y[iter_y]=x_delt;
-        avg_x[iter_y]=getMean(electrons_drifted_x);
-        avg_y[iter_y]=getMean(electrons_drifted_y);
-        avg_z[iter_y]=getMean(electrons_drifted_z);
-        std_x[iter_y]=getSigma(electrons_drifted_x);
-        std_y[iter_y]=getSigma(electrons_drifted_y);
-        std_z[iter_y]=getSigma(electrons_drifted_z);
+        num_electrons_y=num_electrons;
+        average_y=new_average;
+        stddev_y=getSigma(electrons_drifted_t);
+        y_y=y_delt;
+        z_y=z_i;
+        x_y=x_delt;
+        avg_x=getMean(electrons_drifted_x);
+        avg_y=getMean(electrons_drifted_y);
+        avg_z=getMean(electrons_drifted_z);
+        std_x=getSigma(electrons_drifted_x);
+        std_y=getSigma(electrons_drifted_y);
+        std_z=getSigma(electrons_drifted_z);
         //std::cout << "iter_y" << iter_y << std::endl;
         //y_i+=stepy;
         iter_y++;
       }
-    }
-    // dump to file
-    auto itA = num_electrons_y.begin();
-    auto itB = average_y.begin();
-    auto itC = stddev_y.begin();
-    auto itD = y_y.begin();
-    auto itE = z_y.begin();
-    auto itF = x_y.begin();
-    auto itG = avg_x.begin();
-    auto itH = avg_y.begin();
-    auto itI = avg_z.begin();
-    auto itJ = std_x.begin();
-    auto itK = std_y.begin();
-    auto itL = std_z.begin();
-
-    int myval=0;
-    //if(is_pos_borked) iter_y=0;
-    omp_set_lock(&writelock);
-    outputfile.open(outputfilename.str().c_str(),std::ios_base::app);
-    while(myval<iter_y){
-      //std::cout << "iter_y in writing output is " << iter_y << std::endl;
-      //std::cout << "myval in writing value is " << myval << std::endl;
-      outputfile << num_electrons_y[myval] << "," << average_y[myval] << "," << stddev_y[myval] << "," 
-      << y_y[myval] << "," << z_y[myval] << "," << x_y[myval] << "," << avg_x[myval] << "," << avg_y[myval] << "," << avg_z[myval]
-      << "," << std_x[myval] << "," << std_y[myval] << "," << std_z[myval]
+      omp_set_lock(&writelock);
+      outputfile.open(outputfilename.str().c_str(),std::ios_base::app);
+      outputfile << num_electrons_y << "," << average_y << "," << stddev_y << "," 
+      << y_y << "," << z_y << "," << x_y << "," << avg_x << "," << avg_y << "," << avg_z
+      << "," << std_x << "," << std_y << "," << std_z
       << std::endl;
-      myval++;
-    }
-    /*for (auto& [a,b,c,d,e,f] : zip(num_electrons_y, average_y,stddev_y,y_y,z_y,x_y)) {
-      outputfile << a << "," << b << "," << c << "," << d << "," << e << "," << f << std::endl;
-
-    }*/
-    //x_i+=stepx;
-    outputfile.close();
-    omp_unset_lock(&writelock);
-    //y_i=min_y_i;
-    delete driftline;
-    //delete aval;
-  }
+      //x_i+=stepx;
+      outputfile.close();
+      omp_unset_lock(&writelock);
+      std::cout << "x = " << ix << ", y= " << iy << ", threadId = "<< omp_get_thread_num() << std::endl; //i, j, omp_get_thread_num());
+      //y_i=min_y_i;
+      delete driftline;
+      //delete aval;
+    }// end of for loop y. move file writing inside
+  }// end of for loop x
   //std::cout << "# Avalanched electrons: " << num_electrons << " ave sig is: " << running_average << " RMS is : " << getSigma(electrons_drifted) << std::endl;
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed_seconds = end - start;
@@ -436,6 +418,9 @@ int main(int argc, char * argv[]) {
   omp_destroy_lock(&writelock);
   //outputfile.close();
   //statfile.close();
+  stat_h->Write();
+  drifttime_h->Write();
   app->Run(kTRUE);
+  Outfile->Close();
   return 0;
 }
