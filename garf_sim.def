@@ -1,9 +1,9 @@
 Bootstrap: docker
-From: rootproject/root:6.32.04-ubuntu24.04
+From: rootproject/root:6.28.04-ubuntu22.04
 Stage: build
 
 
-%environment 
+%environment
     export ROOTSYS=/opt/root/
     export GARFIELD_HOME=/opt/garfieldpp
     export LD_LIBRARY_PATH=/lib:/lib64:/usr/lib:/opt/root/lib:$LD_LIBRARY_PATH
@@ -18,12 +18,15 @@ Stage: build
     export GARFIELD_HOME=/opt/garfieldpp
     export LD_LIBRARY_PATH=/lib:/lib64:/usr/lib:/opt/root/lib:$LD_LIBRARY_PATH
     export GARFIELD_IONDATA=${GARFIELD_HOME}/Data
-
+    apt update
+    apt-get --assume-yes install nano
+    apt-get --assume-yes install git
     git clone https://gitlab.cern.ch/garfield/garfieldpp.git && \
-        cd garfieldpp && mkdir build && cd build && \
+        cd garfieldpp && git fetch --tags && \
+        latestTag=$(git describe --tags "$(git rev-list --tags --max-count=1)") && \
+        git checkout $latestTag && \
+        mkdir build && cd build && \
         cmake -DCMAKE_INSTALL_PREFIX=${GARFIELD_HOME}/install .. && \
         make -j $(nproc) && make install && \
         mkdir ${GARFIELD_HOME}/install/lib64/ && \
-        ln -s ${GARFIELD_HOME}/install/lib/* ${GARFIELD_HOME}/install/lib64/ 
-
-        
+        ln -s ${GARFIELD_HOME}/install/lib/* ${GARFIELD_HOME}/install/lib64/
