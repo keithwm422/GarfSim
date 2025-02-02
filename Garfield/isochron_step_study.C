@@ -77,7 +77,8 @@ int main(int argc, char * argv[]) {
   //std::cout << "temperature in kelvin: " << temperature << std::endl;
   const double max_x_in=invals[0]/10.0;
   const double min_x_in=invals[1]/10.0;
-  const int input_n_electrons = (int) invals[2];
+  //const int input_n_electrons = (int) invals[2];
+  const double step_size = invals[2];
   std::stringstream ingasfilename;
   //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";
   //ingasfilename << "FlightGasFiles/BOFF/Flight2024_Boff_P_755.865_T_" << temperature << ".15_multiE_90CO2_10Ar_01122024.gas"; // path FlightGasFiles/BOFF/Flight2024_Boff_P_755.865_T_279.15_multiE_90CO2_10Ar_01122024.gas
@@ -135,8 +136,8 @@ int main(int argc, char * argv[]) {
   std::stringstream outputfilename;
   //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";
   //outputfilename << "isochronGenerator_multi_xmin_" << temperature << "_v2.txt";
-  int max_electrons=input_n_electrons;
-  outputfilename << "num_electrons/isochronGenerator_multi_histo_xmin_" << x_i << "_xmax" << max_x_i << "_maxe_"<< max_electrons << "_.txt";
+  int max_electrons=100;
+  outputfilename << "step_distance_study/isochronGenerator_multi_histo_xmin_" << x_i << "_xmax" << max_x_i << "_stepsize_"<< step_size << "_.txt";
   std::ofstream outputfile(outputfilename.str().c_str(),std::ios_base::app);
 
   outputfile << "num_electrons,average,stddev,y,z,x,dx,dy,dz,sigx,sigy,sigz" << std::endl;
@@ -144,7 +145,7 @@ int main(int argc, char * argv[]) {
   outputfile << std::setprecision(10);
   outputfile.close();
   std::stringstream outrootfilename;
-  outrootfilename << "num_electrons/isochron_distr_" << x_i << "_" << max_x_i << "_" << max_electrons << "_.root";
+  outrootfilename << "step_distance_study/isochron_distr_" << x_i << "_" << max_x_i << "_" << step_size << "_.root";
   TFile * Outfile = new TFile(outrootfilename.str().c_str(),"recreate");
   // create histograms
   // = new TH1D("status","status",20,-19.5,0.5);
@@ -309,7 +310,9 @@ int main(int argc, char * argv[]) {
       double y_delt=y_i+((double)(iy)*stepy);
       AvalancheMC * driftline = new AvalancheMC();
       //  driftline->EnableDebugging();
-      driftline->SetDistanceSteps(0.001);
+      //driftline->SetTimeSteps(step_size/1000.0);
+      driftline->SetDistanceSteps(step_size/1000.0);
+      //driftline->SetDistanceSteps(0.001);
       //driftline->EnableMagneticField();
       driftline->EnableDiffusion();
       driftline->SetSensor(sensor);
