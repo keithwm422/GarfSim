@@ -107,6 +107,24 @@ isochronGenerator_p_fullEfield_debug: isochronGenerator_p_fullEfield_debug.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 isochronGenerator_mullti: isochronGenerator_mullti.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochronGenerator_multi_histograms: isochronGenerator_multi_histograms.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+isochron_step_study: isochron_step_study.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+flight_isochrone_v1: flight_isochrone_v1.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+flight_isochrone_topquarter: flight_isochrone_topquarter.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+flight_isochrone_btmquarter: flight_isochrone_btmquarter.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+temperature_isochrone_study: temperature_isochrone_study.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+temperature_iso_gen_study: temperature_iso_gen_study.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+iso_gen_hires: iso_gen_hires.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+iso_gen_02122025: iso_gen_02122025.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 printgas: printgas.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 full_tpc_sim:	full_tpc_sim.C
