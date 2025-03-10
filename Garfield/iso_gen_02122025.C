@@ -59,8 +59,10 @@ int main(int argc, char * argv[]) {
   if     (which_zone==1) zone_in="center"; // center
   else if(which_zone==2) zone_in="btmq"; // btm
   else if(which_zone==3) zone_in="sgct"; // single center
+  else if(which_zone==4) zone_in="topwire"; // single top-most wire
+  else if(which_zone==5) zone_in="btmwire"; // single bottom-most wire
 
-  const double step_size = 40.0;
+  const double step_size = 1.0;
   std::stringstream ingasfilename;
   ingasfilename << "/home/kmcbride/garfield/keiths_code/GarfSim/Garfield/FlightGasFiles/BOFF/Flight2024_Boff_P_755.865_T_" << temperature << ".15_multiE_90CO2_10Ar_01122024.gas";
   MediumMagboltz * gas = new MediumMagboltz();
@@ -103,9 +105,17 @@ int main(int argc, char * argv[]) {
     zone_y_min=0.0;
     zone_y_max=0.8;
   }
+  else if(which_zone==4){ // top most wire
+    zone_y_min=28.0;
+    zone_y_max=28.8;
+  }
+  else if(which_zone==5){ // bottom most wire
+    zone_y_min=-28.8;
+    zone_y_max=-28.0;
+  }
   // for the drift time vs temp calculation of the DCT
   //const double max_y_i=28.8-rCathode, max_x_i=max_x_in, stepy=0.2,stepx=0.25, min_y_i=-28.8+rCathode;
-  const double max_y_i=zone_y_max, max_x_i=max_x_in, stepy=0.1,stepx=0.25, min_y_i=zone_y_min;
+  const double max_y_i=zone_y_max, max_x_i=max_x_in, stepy=0.1,stepx=0.1, min_y_i=zone_y_min;
   const double x_i=min_x_in, y_i=min_y_i, z_i=0.0, t_i=0, e_i=0, dx_i=0, dy_i=0, dz_i=0; // -300e-4+rAnode+100e-4 , 2.4 ,0 ,0 (don't forget the stagger in x! add extra 0.03)
   
   // correct the stepping and grid if we have negative numbers inputted for x?

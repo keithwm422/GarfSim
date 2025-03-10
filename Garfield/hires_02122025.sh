@@ -73,13 +73,13 @@ C_RET="\033[1;39m"
 #target_dir="data/stg0"
 
 #[2] Process stg0 laser
-for j in $(seq 5.0 2.5 75.0);
+for j in $(seq 0.4 0.1 4.9);
 do
   check
   echo $j
-  k=$(echo "scale=2; $j+2.4" | bc)
+  k=$(echo "scale=2; $j+0.09" | bc)
   echo $k
-  execute "./iso_gen_02122025 $k $j 293 1 >> hires_redirects_02122025/simout_btmq_$k_$j.txt 2>&1 &"
+  execute "./iso_gen_02122025 $k $j 293 3 >> hires_redirects_02122025/simout_sgct_$k_$j.txt 2>&1 &"
 done
 wait
 
