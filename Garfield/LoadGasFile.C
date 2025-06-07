@@ -29,7 +29,7 @@ int main(int argc, char * argv[]) {
   //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
   //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
   //gas->LoadGasFile("Flight2024_Bon_multiB_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
-  gas->LoadGasFile("Flight2024_Boff_P_755.865_T_303.15_multiE_90CO2_10Ar_01122024.gas");
+  gas->LoadGasFile("/home/kmcbride/garfield/keiths_code/GarfSim/Garfield/FlightGasFiles/BOFF/Flight2024_Boff_P_755.865_T_303.15_multiE_90CO2_10Ar_01122024.gas");
   gas->PrintGas();
   std::vector<double> efields;
   std::vector<double> bfields;

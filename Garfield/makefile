@@ -125,6 +125,14 @@ iso_gen_hires: iso_gen_hires.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 iso_gen_02122025: iso_gen_02122025.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+iso_gen_foranalysis: iso_gen_foranalysis.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+BON_iso_gen_foranalysis: BON_iso_gen_foranalysis.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+BON_iso_gen_foranalysis: BON_iso_gen_foranalysis.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+BOFF_iso_gen_parsedbysensewire: BOFF_iso_gen_parsedbysensewire.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 printgas: printgas.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 full_tpc_sim:	full_tpc_sim.C
