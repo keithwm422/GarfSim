@@ -103,6 +103,10 @@ int main(int argc, char * argv[]) {
   double zone_y_max=YPosOfInterest+2.0; // highest for top
   if(zone_y_min < -30.0) zone_y_min=-29.6;
   if(zone_y_max > 29.8) zone_y_max=29.6;
+  // if top 2 or bottom two wires, we need to expand the z-axis a little more
+  if(wireIDOfInterest==0 || wireIDOfInterest==1) zone_y_min=zone_y_min-1.0; // need 1 more cm in vertical to accnt for Efield distortion
+  if(wireIDOfInterest==70 || wireIDOfInterest==71) zone_y_max=zone_y_max+1.0; // need 1 more cm in vertical to accnt for Efield distortion
+
   std::cout << "zone_y_min and max are: " << zone_y_min << ", " << zone_y_max << std::endl;
   // for the drift time vs temp calculation of the DCT
   //const double max_y_i=28.8-rCathode, max_x_i=max_x_in, stepy=0.2,stepx=0.25, min_y_i=-28.8+rCathode;
