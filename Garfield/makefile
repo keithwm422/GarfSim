@@ -127,9 +127,11 @@ iso_gen_02122025: iso_gen_02122025.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 iso_gen_foranalysis: iso_gen_foranalysis.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
-BON_iso_gen_foranalysis: BON_iso_gen_foranalysis.C
+testisopersw_justwirepositions: testisopersw_justwirepositions.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 BON_iso_gen_foranalysis: BON_iso_gen_foranalysis.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+BON_iso_gen_cluster: BON_iso_gen_cluster.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 BOFF_iso_gen_parsedbysensewire: BOFF_iso_gen_parsedbysensewire.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
