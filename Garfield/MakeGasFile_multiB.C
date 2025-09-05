@@ -28,8 +28,8 @@ int main(int argc, char * argv[]) {
   std::cout << "Efield in Volts/cm: " << Efield << std::endl;
 
   std::stringstream outfilename;
-  //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";      
-  outfilename << "Flight2024_Bon1T_P_" << pressure <<"_T_" << temperature << "_10Ar_90CO2_multiE.gas";      
+  //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";
+  outfilename << "Flight2024_oneBandE_P_" << pressure <<"_T_" << temperature << "_10Ar_90CO2.gas";      
 
   // Setup the gas.
   MediumMagboltz* gas = new MediumMagboltz();
@@ -43,7 +43,7 @@ int main(int argc, char * argv[]) {
   //const double emin = E_not;
   //const double emax = E_not;
   //for efield drift study
-  const int nFields = 11;
+  const int nFields = 3;
   //make E_not the midpt
   const double E_not = 984.25;
   const double emin = E_not-E_not;
@@ -51,16 +51,16 @@ int main(int argc, char * argv[]) {
 
   // Flag to request logarithmic spacing.
   const bool useLog = false;
-  const double bmin=1;
+  const double bmin=0;
   const double bmax=1; // do we need magnetic field on?
-  const int nBFields=1;
+  const int nBFields=3;
   gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,TMath::Pi()/2.0,TMath::Pi()/2.0,1); 
 
   // Turn on penning transfer?
   gas->EnablePenningTransfer();
   gas->SetMaxElectronEnergy(200);
   std::cout << "number of levels: " << gas->GetNumberOfLevels();
-  const int ncoll = 10;
+  const int ncoll = 3;
   // Switch on debugging to print the Magboltz output.
   gas->EnableDebugging();
   // Run Magboltz to generate the gas table.

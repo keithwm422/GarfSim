@@ -124,7 +124,7 @@ int main(int argc, char * argv[]) {
   const double rCathode= 175e-4;
   const double vAnode= 0;
   const double rAnode= 20e-4;
-  const double vPotential= -250;
+  const double vPotential= -2700;
   const double rPotential= 175e-4;
   
   const double anodesep = 0.8;
@@ -183,7 +183,7 @@ int main(int argc, char * argv[]) {
       cmp->AddWire(x,y,2*rCathode, v, "T");
     }
   }
-
+  return 0; 
   Sensor * sensor = new Sensor;
   ViewSignal * vs1 = new ViewSignal;
 

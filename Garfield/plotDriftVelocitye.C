@@ -7,13 +7,14 @@
 #include "TMath.h"
 
 #include "MediumMagboltz.hh"
+#include "ViewMedium.hh"
 #include "FundamentalConstants.hh"
 
 using namespace Garfield;
 
 int main(int argc, char * argv[]) {
 
-  // TApplication app("app", &argc, argv);
+   TApplication app("app", &argc, argv);
   double invals[10]={0};
   for(int i = 1; i < argc; i++){
     invals[i-1] = atof(argv[i]);
@@ -21,10 +22,9 @@ int main(int argc, char * argv[]) {
   }
   double myvelocity;
   MediumMagboltz * gas = new MediumMagboltz();
-  //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
-  //gas->LoadGasFile("Flight2024_multiBandE_P_755.038_T_299.15_10Ar_90CO2.gas");
-  gas->LoadGasFile("Flight2024_Bon1T_P_755.865_T_293.15_10Ar_90CO2_multiE.gas");
-  //gas->PrintGas();
+//  gas->LoadGasFile("Flight2024_Bgrid_P_755.865_T_293.15_.gas");
+  gas->LoadGasFile("Flight2024_Bon_multiB_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
+  gas->PrintGas();
   std::vector<double> efields;
   std::vector<double> bfields;
   std::vector<double> angles;
@@ -48,8 +48,11 @@ int main(int argc, char * argv[]) {
         std::printf("%10.3f    %10.3f    %10.3f\n", efields[i], ve, lorentzangle);
       }
     }
-  } 
+  }
+  ViewMedium view;
+  view.SetMedium(gas);
+  view.PlotElectronVelocity('e'); 
   
-  // app.Run(kTRUE);
+   app.Run(kTRUE);
 
 }
