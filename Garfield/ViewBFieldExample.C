@@ -9,27 +9,27 @@
 #include <TApplication.h>
 #include <TFile.h>
 #include <TH1.h>
-#include "MediumMagboltz.hh"
-#include "FundamentalConstants.hh"
-#include "SolidBox.hh"
-#include "ComponentAnalyticField.hh"
-#include "ComponentGrid.hh"
-#include "GeometrySimple.hh"
-#include "ViewCell.hh"
-#include "ViewField.hh"
-#include "TrackSimple.hh"
-#include "ViewDrift.hh"
-#include "TrackHeed.hh"
-#include "DriftLineRKF.hh"
-#include "AvalancheMicroscopic.hh"
-#include "AvalancheMC.hh"
-#include "ViewSignal.hh"
-#include "Random.hh"
+#include "Garfield/MediumMagboltz.hh"
+#include "Garfield/FundamentalConstants.hh"
+#include "Garfield/SolidBox.hh"
+#include "Garfield/ComponentAnalyticField.hh"
+#include "Garfield/ComponentGrid.hh"
+#include "Garfield/Sensor.hh"
+#include "Garfield/GeometrySimple.hh"
+#include "Garfield/ViewCell.hh"
+#include "Garfield/ViewField.hh"
+#include "Garfield/TrackSimple.hh"
+#include "Garfield/ViewDrift.hh"
+#include "Garfield/TrackHeed.hh"
+#include "Garfield/DriftLineRKF.hh"
+#include "Garfield/AvalancheMicroscopic.hh"
+#include "Garfield/AvalancheMC.hh"
+#include "Garfield/ViewSignal.hh"
+#include "Garfield/Random.hh"
 #include <TROOT.h>
 #include <TRint.h>
 #include "DCsim.hh"
 #include <fstream>
-#include "Plotting.hh"
 #include "TMath.h"
 #include <sys/types.h>
 #include <unistd.h>
@@ -39,7 +39,7 @@
 #include <iomanip>
 #include <omp.h>
 #include <chrono>
-#include "ViewIsochrons.hh"
+#include "Garfield/ViewIsochrons.hh"
 using namespace Garfield;
 
 double getMean(const std::vector<double> &input){
@@ -221,7 +221,7 @@ int main(int argc, char * argv[]) {
   //cmp.SetCylindricalCoordinates(); // /c/Users/keith/HELIX/thermal_chamber_temps
   //cmp.LoadMagneticField("solenoid.txt", "XZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
   cmpB->SetGeometry(geo);
-  cmpB->LoadMagneticField("garfield_HEAT_example.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
+  cmpB->LoadMagneticField("/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_-200_column_0.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
 
   Sensor * sensor = new Sensor;
   //ViewSignal * vs1 = new ViewSignal;

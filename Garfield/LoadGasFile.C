@@ -6,8 +6,8 @@
 #include <TApplication.h>
 #include "TMath.h"
 
-#include "MediumMagboltz.hh"
-#include "FundamentalConstants.hh"
+#include "Garfield/MediumMagboltz.hh"
+#include "Garfield/FundamentalConstants.hh"
 
 using namespace Garfield;
 
@@ -23,7 +23,7 @@ int main(int argc, char * argv[]) {
   MediumMagboltz * gas = new MediumMagboltz();
   //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
   //gas->LoadGasFile("Flight2024_multiBandE_P_755.038_T_299.15_10Ar_90CO2.gas");
-  gas->LoadGasFile("Flight2024_Bon1T_P_755.865_T_293.15_10Ar_90CO2_multiE.gas");
+  gas->LoadGasFile("Flight2024_Bon_P_755.865_T_303.15_10Ar_90CO2_multiE.gas");
   //gas->PrintGas();
   std::vector<double> efields;
   std::vector<double> bfields;

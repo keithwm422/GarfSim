@@ -6,8 +6,8 @@
 #include <TApplication.h>
 #include "TMath.h"
 
-#include "MediumMagboltz.hh"
-#include "FundamentalConstants.hh"
+#include "Garfield/MediumMagboltz.hh"
+#include "Garfield/FundamentalConstants.hh"
 
 using namespace Garfield;
 
@@ -24,12 +24,10 @@ int main(int argc, char * argv[]) {
   std::cout << "pressure in torr: " << pressure << std::endl;
   const double temperature = 273.15 + invals[1];
   std::cout << "temperature in kelvin: " << temperature << std::endl;
-  const double Efield = invals[2];
-  std::cout << "Efield in Volts/cm: " << Efield << std::endl;
 
   std::stringstream outfilename;
-  //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";      
-  outfilename << "Flight2024_Bon1T_P_" << pressure <<"_T_" << temperature << "_10Ar_90CO2_multiE.gas";      
+  //outfilename << "Flight2024_Boff_P_" << pressure <<"_T_" << temperature << "_.gas";
+  outfilename << "Flight2024_Bon_P_" << pressure <<"_T_" << temperature << "_10Ar_90CO2_multiE.gas";
 
   // Setup the gas.
   MediumMagboltz* gas = new MediumMagboltz();
@@ -43,7 +41,7 @@ int main(int argc, char * argv[]) {
   //const double emin = E_not;
   //const double emax = E_not;
   //for efield drift study
-  const int nFields = 11;
+  const int nFields = 5;
   //make E_not the midpt
   const double E_not = 984.25;
   const double emin = E_not-E_not;
@@ -51,9 +49,9 @@ int main(int argc, char * argv[]) {
 
   // Flag to request logarithmic spacing.
   const bool useLog = false;
-  const double bmin=1;
-  const double bmax=1; // do we need magnetic field on?
-  const int nBFields=1;
+  const double bmin=0;
+  const double bmax=2; // do we need magnetic field on?
+  const int nBFields=3;
   gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,TMath::Pi()/2.0,TMath::Pi()/2.0,1); 
 
   // Turn on penning transfer?
@@ -62,10 +60,10 @@ int main(int argc, char * argv[]) {
   std::cout << "number of levels: " << gas->GetNumberOfLevels();
   const int ncoll = 10;
   // Switch on debugging to print the Magboltz output.
-  gas->EnableDebugging();
+  //gas->EnableDebugging();
   // Run Magboltz to generate the gas table.
   gas->GenerateGasTable(ncoll);
-  gas->DisableDebugging();
+  //gas->DisableDebugging();
   // Save the table. 
   gas->WriteGasFile(outfilename.str());
 

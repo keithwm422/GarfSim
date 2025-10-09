@@ -1,6 +1,6 @@
 OBJDIR  = $(GARFIELD_HOME)/build/Object
 SRCDIR  = $(GARFIELD_HOME)/Source
-INCDIR  = $(GARFIELD_HOME)/install/include/Garfield
+INCDIR  = $(GARFIELD_HOME)/install/include
 HEEDDIR = $(GARFIELD_HOME)/Heed
 LIBDIR  = $(GARFIELD_HOME)/install/lib64
 DCsimINCDIR  = $(DCsim_HOME)/Include
@@ -74,6 +74,10 @@ smalljet_drifttime_electron_vs_coordinates: smalljet_drifttime_electron_vs_coord
 smalljet_drifttime_electron_vs_coordinates_finegrid: smalljet_drifttime_electron_vs_coordinates_finegrid.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 isochron_generator: isochron_generator.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+IsoHEATB: IsoHEATB.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+IsoMRE: IsoMRE.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 field_map_gen: field_map_gen.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
