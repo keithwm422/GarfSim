@@ -107,6 +107,8 @@ isochron_gen_p: isochron_gen_p.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 GasFileGenerator: GasFileGenerator.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+thread_TGraph2D_tester: thread_TGraph2D_tester.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 isochron_gen_p_full: isochron_gen_p_full.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 ViewIsochroneDCT: ViewIsochroneDCT.C

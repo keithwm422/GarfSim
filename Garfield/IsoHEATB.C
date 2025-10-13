@@ -49,6 +49,26 @@ using namespace Garfield;
 
 
 
+std::tuple<double, double, int> calculateBinParams(double mx, double mn, double step) {
+  // now fill my arrays for determining appropriate bins
+  int numbins=std::round(((double)(mx)-(double)(mn))/(step))+1;
+  double minval=mn-(step/2.0);
+  double maxval=mx+(step/2.0);
+  return std::make_tuple(maxval, minval, numbins);
+}
+
+size_t getCurrentRSS() {
+    long rss = 0L;
+    FILE* fp = fopen("/proc/self/statm", "r");
+    if (fp != nullptr) {
+        if (fscanf(fp, "%*s%ld", &rss) == 1) {
+            // RSS is in pages, convert to bytes
+            rss = rss * sysconf(_SC_PAGESIZE);
+        }
+        fclose(fp);
+    }
+    return static_cast<size_t>(rss);
+}
 
 int whichWireID_int(double ypos){
   return std::round((double)(((71)/2.0)-ypos/8.0));
@@ -112,6 +132,7 @@ int main(int argc, char * argv[]) {
   int seed = pid*t.tv_usec;
   std::cout << "Random Seed: " << seed << std::endl;
   gRandom->TRandom::GetSeed();
+  std::cout << "RSS before gasfile allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   MediumMagboltz * gas = new MediumMagboltz();
   // Setup the gas
   //const double temperature=299.15;
@@ -139,6 +160,7 @@ int main(int argc, char * argv[]) {
   char * IonData = getenv("GARFIELD_IONDATA") ;
   gas->LoadIonMobility(IonData);
   gas->PrintGas();
+  std::cout << "RSS after gasfile allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   ComponentAnalyticField * cmp = new ComponentAnalyticField();
   //cmp->SetMagneticField(0.,0.,BFieldValue);
   //cmp->SetMagneticField(0.,0.,1.0);
@@ -260,7 +282,7 @@ int main(int argc, char * argv[]) {
   //cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
   if(which_column==0 || which_column==1 || which_column==-1){
     std::stringstream magfilename;
-    magfilename << "/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_";
+    magfilename << "/home/kmcbride/master/08212025/helix-tools/00build/HEATModelForGarfield/HEATModel_xslice_";
     magfilename << std::fixed << std::setprecision(0) << x_slice << "_column_" << which_column << ".csv";
     cmpB->LoadMagneticField(magfilename.str() , "XYZ");
   }
@@ -296,6 +318,7 @@ int main(int argc, char * argv[]) {
   unsigned int nPoints = 24000;
   const double ymin=-30.0;
   const double ymax=30.0;
+  const double zstep_param=(ymax-ymin)/(double) (nPoints);
   //unsigned int nPoints = 20;
   //const double ymin=-1.0;
   //const double ymax=1.0;
@@ -327,17 +350,20 @@ int main(int argc, char * argv[]) {
   drift.SetMaximumStepSize(); // need to think about this potentially
   drift.EnableSignalCalculation(false);
 // everything else is one big for loop around the starting points
+  std::cout << "RSS before main drift loop allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   for (const auto& point : points) {
     // always use DriftElectron 
     drift.DriftElectron(point[0], point[1], point[2], 0.);
     const unsigned int nu = drift.GetNumberOfDriftLinePoints();
     // Check that the drift line has enough points.
     if (nu < 3) continue;
+    //std::cout << "driftline has number of driftline pts: " << (int) nu << std::endl;
     int status = 0;
     double xf = 0., yf = 0., zf = 0., tf = 0.;
     drift.GetEndPoint(xf, yf, zf, tf, status);
     // Find the number of points to be stored.
     const unsigned int nSteps = static_cast<unsigned int>(tf / tstep);
+    //std::cout << "for the tf: " << tf << "tf/tstep is : " << (int) nSteps << std::endl;
     if (nSteps == 0) continue;
     std::vector<double> xu(nu, 0.);
     std::vector<double> yu(nu, 0.);
@@ -365,6 +391,7 @@ int main(int argc, char * argv[]) {
                                     Interpolate(zu, tu, t),t};
       tab.push_back(step);
     }
+    //std::cout << "tab about to be added has size: " << tab.size() << std::endl;
     driftLines.push_back(std::move(tab));
     std::array<double, 3> start = {xu[0], yu[0], zu[0]};
     std::array<double, 3> end = {xu[nu - 1], yu[nu - 1], zu[nu - 1]};
@@ -376,7 +403,9 @@ int main(int argc, char * argv[]) {
     } else {
       statusCodes.push_back(0);
     }
+    //std::cout << "RSS inside drift loop allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   }
+  std::cout << "RSS after main drift loop allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   //
   // now what to do with these vectors?
   // eh figure that out afterwards...
@@ -390,10 +419,9 @@ int main(int argc, char * argv[]) {
   //  std::cout << "driftline has size : " << driftLine.size() << std::endl;
   //}
   // need a TGraph2D for each of the sense wires available?
-  TGraph2D * senses[72];
-  TGraph2D * invsenses[72];
+  TGraph2D * senses[72]; //  we may not even need this...
+  //TGraph2D * invsenses[72];
   //TH2F * sensesH[72];
-  TH2F * invsensesH[72];
   std::stringstream graphNames;
   std::stringstream TitleNames;
 
@@ -415,9 +443,6 @@ int main(int argc, char * argv[]) {
     if(zone_y_max > 29.8) zone_y_max=29.6;
     graphNames.str("");
     graphNames << "iso_inverse_" << h;
-    TitleNames.str("");
-    TitleNames << "Inverse sense wire " << h << ";y(cm);z(cm);time(ns)";
-    invsensesH[h]= new TH2F(graphNames.str().c_str(),TitleNames.str().c_str(),numtimebins,lowTimeEdge,highTimeEdge,nbinsy,y_low_edge,y_high_edge);
   }
   for(int s=0;s<72;s++){
     senses[s] = new TGraph2D();
@@ -427,13 +452,13 @@ int main(int argc, char * argv[]) {
     graphNames.str("");
     graphNames << "Sense Wire " << s << "; y(cm); z(cm)";
     senses[s]->SetTitle(graphNames.str().c_str());
-    invsenses[s] = new TGraph2D();
+    //invsenses[s] = new TGraph2D();
     graphNames.str("");
     graphNames << "GraphInvertedsensewire_" << s;
-    invsenses[s]->SetName(graphNames.str().c_str());
+    //invsenses[s]->SetName(graphNames.str().c_str());
     graphNames.str("");
     graphNames << "Inverse Isochrone Sense Wire " << s << "; y(cm); z(cm)";
-    invsenses[s]->SetTitle(graphNames.str().c_str());
+    //invsenses[s]->SetTitle(graphNames.str().c_str());
   }
 
   TGraph * testISO = new TGraph();
@@ -445,9 +470,9 @@ int main(int argc, char * argv[]) {
       int thisWireIndex=statusCodes[iter]-1;
       for(const auto& drift: driftLines[iter]){
         senses[thisWireIndex]->AddPoint(drift[0],drift[1],drift[3]);
-        invsenses[thisWireIndex]->AddPoint(drift[3],drift[1],drift[0]);
-        if(drift[0]>0) invsensesH[thisWireIndex]->SetBinContent(invsensesH[thisWireIndex]->GetXaxis()->FindBin(drift[3]),invsensesH[thisWireIndex]->GetYaxis()->FindBin(drift[1]),drift[0]);
-        else if(drift[0]<0) invsensesH[thisWireIndex]->SetBinContent(invsensesH[thisWireIndex]->GetXaxis()->FindBin(-1.0*drift[3]),invsensesH[thisWireIndex]->GetYaxis()->FindBin(drift[1]),drift[0]);
+        //invsenses[thisWireIndex]->AddPoint(drift[3],drift[1],drift[0]);
+        //if(drift[0]>0) invsensesH[thisWireIndex]->SetBinContent(invsensesH[thisWireIndex]->GetXaxis()->FindBin(drift[3]),invsensesH[thisWireIndex]->GetYaxis()->FindBin(drift[1]),drift[0]);
+        //else if(drift[0]<0) invsensesH[thisWireIndex]->SetBinContent(invsensesH[thisWireIndex]->GetXaxis()->FindBin(-1.0*drift[3]),invsensesH[thisWireIndex]->GetYaxis()->FindBin(drift[1]),drift[0]);
         if(drift[3]<5009 && drift[3] >4991) testISO->AddPoint(drift[0],drift[1]);
       }
     }
@@ -458,6 +483,63 @@ int main(int argc, char * argv[]) {
   //  std::cout << drift_arr[0] << "," << drift_arr[1] << "," << drift_arr[2] << "," << drift_arr[3] << std::endl;
   //}
 
+  //can we clear memory now?
+  std::cout << "RSS just before clearing: " << getCurrentRSS() / 1024 << " KB" << std::endl;
+  driftLines.clear();
+  std::cout << "RSS just after clearing: " << getCurrentRSS() / 1024 << " KB" << std::endl;
+  // lets just fille the TH2Fs and never write the tgraphs then?
+  std::tuple<double, double, int> t_all = calculateBinParams(15000.0,-15000.0,input_tstep); //1 ns steps
+  std::stringstream isonames; // for accessing histo names inside of the input file(s)
+  TH2F * invsensesH[72];
+  TH2S * invsensesH_num[72];
+  for(int wire_i=0;wire_i<72;wire_i++){
+    double thisymax=30.0;
+    double thisymin=-30.0;
+    if(senses[wire_i]->GetN()>1){
+      std::cout << "wire_i had pints" << wire_i << std::endl;
+      thisymax= senses[wire_i]->GetYmax();
+      thisymin=senses[wire_i]->GetYmin();
+      //continue;
+    }
+    std::tuple<double, double, int> these_z = calculateBinParams(thisymax,thisymin,zstep_param); // in cm steps
+    //std::tuple<double, double, int> these_y = calculateBinParams(senses[wire_i]->GetXmax(),senses[wire_i]->GetXmin(),0.0125); // in cm steps
+    isonames.str("");
+    isonames << "iso_inverse_" << wire_i;
+    invsensesH[wire_i] = new TH2F(isonames.str().c_str(),isonames.str().c_str(),std::get<2>(t_all),std::get<1>(t_all),std::get<0>(t_all),std::get<2>(these_z),std::get<1>(these_z),std::get<0>(these_z));
+    isonames.str("");
+    isonames << "isoNums_inverse_" << wire_i;
+    invsensesH_num[wire_i] = new TH2S(isonames.str().c_str(),isonames.str().c_str(),std::get<2>(t_all),std::get<1>(t_all),std::get<0>(t_all),std::get<2>(these_z),std::get<1>(these_z),std::get<0>(these_z));
+    // loop to fill these guys
+    for(int pt = 0; pt < senses[wire_i]->GetN();pt++){
+        double ypos,zpos,time_in;
+        senses[wire_i]->GetPoint(pt,ypos,zpos,time_in); // y,z,t
+        // find out if that bin has any entries and if so, include the new value and average it?
+        // this means having a running copy of the the histogram that is being incremented when accessing that bin // https://math.stackexchange.com/questions/1153794/adding-to-an-average>
+        //int num_entries=(int) isoNums->GetBinContent(isoNums->GetXaxis()->FindBin(ypos),isoNums->GetYaxis()->FindBin(zpos)); // current number
+        //float curr_value=iso->GetBinContent(iso->GetXaxis()->FindBin(ypos),iso->GetYaxis()->FindBin(zpos)); // current running sum
+        //float new_value=( time+  ((float)(num_entries)*curr_value) )  / (float) (num_entries+1);
+        //if(pt<100) cout << ypos << "," << zpos << "," << time << "," << curr_value <<"," << num_entries << "," << new_value << endl;
+        //isoNums->Fill(ypos,zpos); // increment bin with another entry
+        //iso->SetBinContent(iso->GetXaxis()->FindBin(ypos),iso->GetYaxis()->FindBin(zpos),new_value);
+        if(ypos<0){
+          //iso_inv->SetBinContent(iso_inv->GetXaxis()->FindBin(-1.0*time),iso_inv->GetYaxis()->FindBin(zpos),ypos);
+          int num_entries_temp=(int) invsensesH_num[wire_i]->GetBinContent(invsensesH_num[wire_i]->GetXaxis()->FindBin(-1.0*time_in),invsensesH_num[wire_i]->GetYaxis()->FindBin(zpos)); // current number
+          float curr_value_temp= invsensesH[wire_i]->GetBinContent(invsensesH[wire_i]->GetXaxis()->FindBin(-1.0*time_in),invsensesH[wire_i]->GetYaxis()->FindBin(zpos)); // current running sum
+          float new_value_temp=( (ypos)+  ((float)(num_entries_temp)*curr_value_temp) )  / (float) (num_entries_temp+1);
+          invsensesH_num[wire_i]->Fill(-1.0*time_in,zpos);
+          invsensesH[wire_i]->SetBinContent(invsensesH[wire_i]->GetXaxis()->FindBin(-1.0*time_in),invsensesH[wire_i]->GetYaxis()->FindBin(zpos),new_value_temp);
+        }
+        else{
+          //iso_inv->SetBinContent(iso_inv->GetXaxis()->FindBin(time),iso_inv->GetYaxis()->FindBin(zpos),ypos);
+          int num_entries_temp=(int) invsensesH_num[wire_i]->GetBinContent(invsensesH_num[wire_i]->GetXaxis()->FindBin(time_in),invsensesH_num[wire_i]->GetYaxis()->FindBin(zpos)); // current number
+          float curr_value_temp= invsensesH[wire_i]->GetBinContent(invsensesH[wire_i]->GetXaxis()->FindBin(time_in),invsensesH[wire_i]->GetYaxis()->FindBin(zpos)); // current running sum
+          float new_value_temp=( (ypos)+  ((float)(num_entries_temp)*curr_value_temp) )  / (float) (num_entries_temp+1);
+          invsensesH_num[wire_i]->Fill(time_in,zpos);
+          invsensesH[wire_i]->SetBinContent(invsensesH[wire_i]->GetXaxis()->FindBin(time_in),invsensesH[wire_i]->GetYaxis()->FindBin(zpos),new_value_temp);
+        }
+        //wid->SetBinContent(wid->GetXaxis()->FindBin(ypos),wid->GetYaxis()->FindBin(zpos),(short)(wire_i+1));
+    } // end loop over that tgraph and wire
+  } // end loop over that wire TH2F
   std::cout << "And now min and max status codes are: ";
     // Use std::minmax_element to get iterators to min and max elements
   auto minmax_it = std::minmax_element(statusCodes.begin(), statusCodes.end());
@@ -512,13 +594,10 @@ int main(int argc, char * argv[]) {
   TH1F * endx_H = new TH1F("endX","endX", EndnbinsXYZ[0],Endlow_edgesXYZ[0],Endhigh_edgesXYZ[0]);
   TH1F * endy_H = new TH1F("endY","endY", EndnbinsXYZ[1],Endlow_edgesXYZ[1],Endhigh_edgesXYZ[1]);
   TH1F * endz_H = new TH1F("endZ","endZ", EndnbinsXYZ[2],Endlow_edgesXYZ[2],Endhigh_edgesXYZ[2]);
-
-
-  
   for (int thisstatus : statusCodes) {
       status_H->Fill(thisstatus);
   }
-      // Loop through the vector and fill my histos (index is x y or z)
+  // Loop through the vector and fill my histos (index is x y or z)
   for (const auto& arr : startPoints) {
       startx_H->Fill(arr[0]); 
       starty_H->Fill(arr[1]); 
@@ -529,10 +608,14 @@ int main(int argc, char * argv[]) {
       endy_H->Fill(arr[1]); 
       endz_H->Fill(arr[2]); 
   }
-
   // trying to understand driftline stuff
+  /*
+    TitleNames.str("");
+    TitleNames << "Inverse sense wire " << h << ";y(cm);z(cm);time(ns)";
+    invsensesH[h]= new TH2F(graphNames.str().c_str(),TitleNames.str().c_str(),numtimebins,lowTimeEdge,highTimeEdge,nbinsy,y_low_edge,y_high_edge);
+*/
 
-
+  std::cout << "RSS before writing to file: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed_seconds = end - start;
   std::cout << "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
@@ -549,18 +632,16 @@ int main(int argc, char * argv[]) {
   endy_H->Write();
   endz_H->Write();
   for(int s =0;s<72;s++){
-    senses[s]->Write();
-    //invsenses[s]->Write();
+    //if(senses[s]->GetN()<1) continue;
+    //senses[s]->Write();
     invsensesH[s]->Write();
   }
-  //testISO->Write();
   TParameter tstep_param("TimeStep", tstep);
   TParameter Bfield("Bfield", BFieldValue);
   TParameter Temperature("Temperature", temperature);
-  TParameter versionflag("Isochrone_version", 6);
+  TParameter versionflag("Isochrone_version", 7);
   TParameter columnFlag("Plane", which_column); // -1 is left, center is 0, right is +1
   TParameter Xposition("XSlice", x_slice); // -1 is left, center is 0, right is +1
-  const double zstep_param=(ymax-ymin)/(double) (nPoints);
   TParameter zstepFlag("Zstep_um",zstep_param*10000.0);
   tstep_param.Write();
   Bfield.Write();
@@ -570,5 +651,6 @@ int main(int argc, char * argv[]) {
   Xposition.Write();
   zstepFlag.Write();
   Outfile->Close();
+  std::cout << "RSS after writing to file: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   return 0;
 }
