@@ -119,6 +119,8 @@ HijackedIsochroneDCT: HijackedIsochroneDCT.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 HijackedIsochroneDCT_allwires: HijackedIsochroneDCT_allwires.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+TScaleIso_run: TScaleIso_run.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 HijackedIsochroneDCT_topwires: HijackedIsochroneDCT_topwires.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 HijackedIsochroneDCT_testBmap: HijackedIsochroneDCT_testBmap.C

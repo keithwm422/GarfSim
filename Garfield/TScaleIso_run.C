@@ -1,4 +1,4 @@
-// run like ./IsoHEATB 301 1.0 1.0 1 -200.0 > isoHEATcolumn0_xslice_-200_col_1.txt 2>&1 &
+// run like ./TScaleIso_run 299 0.0 1.0 > TScaleIso_T.txt 2>&1 &
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -47,18 +47,6 @@
 #include <cstdlib> // For system()
 using namespace Garfield;
 
-
-void extractFileFromTarGz(const std::string& archivePath, const std::string& fileNameToExtract, const std::string& outputPath) {
-    // Construct the command to extract the specific file
-    std::string command = "tar -xzvf " + archivePath + " " + " -C " + outputPath + " " + fileNameToExtract; //tar -xzvf HEATModelGarfieldFiles.tar.gz -C /home/kmcbride/HEATModel_files_for$    // Execute the command
-    int result = std::system(command.c_str());
-
-    if (result == 0) {
-        std::cout << "Successfully extracted '" << fileNameToExtract << "' to '" << outputPath << "'." << std::endl;
-    } else {
-        std::cerr << "Error extracting file: " << result << std::endl;
-    }
-}
 
 std::tuple<double, double, int> calculateBinParams(double mx, double mn, double step) {
   // now fill my arrays for determining appropriate bins
@@ -134,9 +122,7 @@ int main(int argc, char * argv[]) {
   const double temperature   = invals[0];
   const double BFieldValue   = invals[1];
   const double input_tstep   = invals[2];
-  const int which_column     = invals[3];
-  const double x_slice     = invals[4];
-  std::cout << "will be simulating HEAT model with column" << which_column << " at xslice " << x_slice << "mm and temperature " << temperature << std::endl;
+  std::cout << "will be simulating at temperature " << temperature << std::endl;
   int pid = getpid();
   timeval t;
   gettimeofday(&t, NULL);
@@ -151,21 +137,21 @@ int main(int argc, char * argv[]) {
   gas->SetTemperature(temperature); // from CLI
   gas->SetPressure(pressure);
   gas->SetComposition("CO2", 90.,"AR", 10.);
-  const int nFields = 5;
+  const int nFields = 11;
   const double E_not = 984.25;
   const double emin = E_not-E_not;
   const double emax = E_not+E_not;
   // Flag to request logarithmic spacing.
   const bool useLog = false;
   const double bmin=0;
-  const double bmax=2; // do we need magnetic field on?
-  const int nBFields=4;
+  const double bmax=0; // do we need magnetic field on?
+  const int nBFields=1;
   gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,TMath::Pi()/2.0,TMath::Pi()/2.0,1); 
   // Turn on penning transfer?
   gas->EnablePenningTransfer();
   gas->SetMaxElectronEnergy(200);
   std::cout << "number of levels: " << gas->GetNumberOfLevels();
-  const int ncoll = 5;
+  const int ncoll = 10;
   gas->GenerateGasTable(ncoll);
   // lets just print out the drift velocity to a file?
   char * IonData = getenv("GARFIELD_IONDATA") ;
@@ -173,7 +159,7 @@ int main(int argc, char * argv[]) {
   gas->PrintGas();
   //std::cout << "RSS after gasfile allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   ComponentAnalyticField * cmp = new ComponentAnalyticField();
-  //cmp->SetMagneticField(0.,0.,BFieldValue);
+  cmp->SetMagneticField(0.,0.,BFieldValue);
   //cmp->SetMagneticField(0.,0.,1.0);
   GeometrySimple * geo = new GeometrySimple();
   SolidBox * enclosure = new SolidBox(0,0,0,10,31.,11);
@@ -287,42 +273,11 @@ int main(int argc, char * argv[]) {
   std::cout << " diameter of cathode is: "  << 2.0*rCathode << std::endl;
   std::cout << " strip_size is: "  << strip_size  << std::endl;
 
-  // need to tar extract the file so we dont need all of them unloaded:
-  std::stringstream magfilename;
-  magfilename << "HEATModelForGarfield/HEATModel_xslice_";
-  magfilename << std::fixed << std::setprecision(0) << x_slice << "_column_" << which_column << ".csv";
-
-  std::string archive = "HEATModelGarfieldFiles.tar.gz";
-  //std::string fileToExtract = "HEATModelForGarfield/HEATModel_xslice_0_column_1.csv"; // Path within the archive // looks like HEATModelForGarfield/HEATModel_xslice_0_column_0.csv
-  std::string outputDir = "/home/kmcbride/garfield/isoHEATB_codes/GarfSim/Garfield/HEATModel_files_for_garfield";
-  extractFileFromTarGz(archive, magfilename.str(), outputDir);
-  // Now you can read the extracted file:
-  std::string extractedFilePath = outputDir + "/" + magfilename.str(); // Adjust if file path within archive differs from output path
-
-  // Load the field map.
-  ComponentGrid * cmpB = new ComponentGrid();
-  cmpB->SetGeometry(geo);
-  //cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
-  if(which_column==0 || which_column==1 || which_column==-1){
-    //cmpB->LoadMagneticField(magfilename.str() , "XYZ");
-    cmpB->LoadMagneticField(extractedFilePath , "XYZ");
-  }
-  //cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ");
-  //else if(which_column==-1) cmpB->LoadMagneticField("garfield_left_column.csv", "XYZ");
-  //else if(which_column==1) cmpB->LoadMagneticField("garfield_right_column.csv", "XYZ");
-  //cmpB->LoadMagneticField("/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_-200_column_0.csv" , "XYZ");
-  //else if(which_column==3) cmpB->LoadMagneticField("/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_200_column_0.csv" , "XYZ");
-  //else if(which_column==4) cmpB->LoadMagneticField("/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_-100_column_0.csv" , "XYZ");
-  else cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
-
   Sensor * sensor = new Sensor;
-  sensor->AddComponent(cmpB);
   sensor->AddComponent(cmp);
   sensor->SetTimeWindow(0,2,20000); // might need to change this, its start, step size, number of steps
   cmp->AddReadout("a");
   sensor->AddElectrode(cmp,"a");
-  sensor->EnableComponent(0, true);
-  sensor->EnableComponent(1, true);
 
  // We are essentially copying all of the computeDriftLines function inside of the ViewIsochrone Class
   // this function looks like : ComputeDriftLines(tstep, points, driftLines, startPoints, endPoints, statusCodes, rev);
@@ -643,7 +598,7 @@ int main(int argc, char * argv[]) {
   std::stringstream outrootfilename;
   //if(BFieldValue==0.0)  outrootfilename << "DriftLineAllwires4800_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_wakely.root";
   //outrootfilename << "IsoHEATB_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_col_" << which_column << "_xpos_" << x_slice << "_.root";
-  outrootfilename << "/scratch/midway3/kmcbride/isoHeatB_outputs/IsoHEATB_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_col_" << which_column << "_xpos_" << x_slice << "_.root";
+  outrootfilename << "/scratch/midway3/kmcbride/TScaleIso_outputs/TScaleIso_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_.root";
   TFile * Outfile = new TFile(outrootfilename.str().c_str(),"recreate");
   Outfile->cd();
   status_H->Write();
@@ -661,16 +616,12 @@ int main(int argc, char * argv[]) {
   TParameter tstep_param("TimeStep", tstep);
   TParameter Bfield("Bfield", BFieldValue);
   TParameter Temperature("Temperature", temperature);
-  TParameter versionflag("Isochrone_version", 7);
-  TParameter columnFlag("Plane", which_column); // -1 is left, center is 0, right is +1
-  TParameter Xposition("XSlice", x_slice); // -1 is left, center is 0, right is +1
+  TParameter versionflag("Isochrone_version", 6);
   TParameter zstepFlag("Zstep_um",zstep_param*10000.0);
   tstep_param.Write();
   Bfield.Write();
   Temperature.Write();
   versionflag.Write();
-  columnFlag.Write();
-  Xposition.Write();
   zstepFlag.Write();
   Outfile->Close();
   //std::cout << "RSS after writing to file: " << getCurrentRSS() / 1024 << " KB" << std::endl;
