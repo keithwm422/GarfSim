@@ -158,13 +158,9 @@ int main(int argc, char * argv[]) {
   // Flag to request logarithmic spacing.
   const bool useLog = false;
   const double bmin=0;
-  const double bmax=2.5; // do we need magnetic field on?
+  const double bmax=2; // do we need magnetic field on?
   const int nBFields=4;
-  const double amin=0;
-  const double amax=TMath::Pi()/2.0; // do we need magnetic field on?
-  const int nAFields=4;
-
-  gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,amin,amax,nAFields); 
+  gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,TMath::Pi()/2.0,TMath::Pi()/2.0,1); 
   // Turn on penning transfer?
   gas->EnablePenningTransfer();
   gas->SetMaxElectronEnergy(200);
@@ -293,15 +289,15 @@ int main(int argc, char * argv[]) {
 
   // need to tar extract the file so we dont need all of them unloaded:
   std::stringstream magfilename;
-  magfilename << "/scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield/HEATModel_xslice_"; // /scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield
+  magfilename << "HEATModelForGarfield/HEATModel_xslice_";
   magfilename << std::fixed << std::setprecision(0) << x_slice << "_column_" << which_column << ".csv";
 
   std::string archive = "HEATModelGarfieldFiles.tar.gz";
   //std::string fileToExtract = "HEATModelForGarfield/HEATModel_xslice_0_column_1.csv"; // Path within the archive // looks like HEATModelForGarfield/HEATModel_xslice_0_column_0.csv
-  //std::string outputDir = "/home/kmcbride/garfield/isoHEATB_codes/GarfSim/Garfield/HEATModel_files_for_garfield";
-  //extractFileFromTarGz(archive, magfilename.str(), outputDir);
+  std::string outputDir = "/home/kmcbride/garfield/isoHEATB_codes/GarfSim/Garfield/HEATModel_files_for_garfield";
+  extractFileFromTarGz(archive, magfilename.str(), outputDir);
   // Now you can read the extracted file:
-  //std::string extractedFilePath = outputDir + "/" + magfilename.str(); // Adjust if file path within archive differs from output path
+  std::string extractedFilePath = outputDir + "/" + magfilename.str(); // Adjust if file path within archive differs from output path
 
   // Load the field map.
   ComponentGrid * cmpB = new ComponentGrid();
@@ -309,7 +305,7 @@ int main(int argc, char * argv[]) {
   //cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
   if(which_column==0 || which_column==1 || which_column==-1){
     //cmpB->LoadMagneticField(magfilename.str() , "XYZ");
-    cmpB->LoadMagneticField(magfilename.str() , "XYZ");
+    cmpB->LoadMagneticField(extractedFilePath , "XYZ");
   }
   //cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ");
   //else if(which_column==-1) cmpB->LoadMagneticField("garfield_left_column.csv", "XYZ");
