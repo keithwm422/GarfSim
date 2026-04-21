@@ -8,6 +8,7 @@
 #include <TROOT.h>
 #include <TApplication.h>
 #include <TFile.h>
+#include <TGraph.h>
 #include <TH1.h>
 #include "Garfield/MediumMagboltz.hh"
 #include "Garfield/FundamentalConstants.hh"
@@ -77,8 +78,11 @@ int main(int argc, char * argv[]) {
     invals[i-1] = atof(argv[i]);
     std::cout << invals[i-1] << std::endl;
   }
-  const double zpos = invals[0]; // HELIX zposition slice to plot Efield in millimeters
-  std::cout << "zpos slicing is [mm] : " << zpos << std::endl;
+  const double thistilt = invals[0]; // HELIX zposition slice to plot Efield in millimeters
+  std::cout << "Tilt will be : " << thistilt << "um" <<  std::endl;
+  const double thisOldWay = invals[1]; // HELIX zposition slice to plot Efield in millimeters
+  bool input_oldWay = (thisOldWay >= 0) ? false : true; // if negative, we will do oldway
+  std::cout << "Old way : " << input_oldWay <<  std::endl;
 
 
 
@@ -99,8 +103,6 @@ int main(int argc, char * argv[]) {
       const char * name = str.c_str();
     }
   }
-  std::stringstream efieldfilename;
-  efieldfilename << "efieldprofile_zpos_" << zpos << ".root";      
 
   //Garfield::plottingEngine.SetDefaultStyle();
   MediumMagboltz * gas = new MediumMagboltz();
@@ -114,9 +116,8 @@ int main(int argc, char * argv[]) {
   gas->SetPressure(pressure);
   gas->SetComposition("co2", 85, "ar", 15);
 
-//  gas->LoadGasFile("co2_90_AR_10_T273.gas");
-//  gas->LoadGasFile("keith_co2_85_AR_15_T273.gas");
-  gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
+  gas->LoadGasFile("/home/kmcbride/garfield/keiths_code/GarfSim/Garfield/FlightGasFiles/BOFF/Flight2024_Boff_P_755.865_T_299.15_multiE_90CO2_10Ar_01122024.gas");
+  //gas->LoadGasFile("/home/kmcbride/garfield/keiths_code/GarfSim/Garfield/FlightGasFiles/BON/Flight2024_Bon_1Tesla_P_755.865_T_299.15_multiE_90CO2_10Ar_01122024.gas");
 
   // lets just print out the drift velocity to a file?
 
@@ -125,22 +126,24 @@ int main(int argc, char * argv[]) {
   gas->PrintGas();
 
   ComponentAnalyticField * cmp = new ComponentAnalyticField();
-//  cmp->SetMagneticField(0.,0.,0.0);
-  cmp->SetMagneticField(0.,0.,1.0);
+  cmp->SetMagneticField(0.,0.,0.0);
+  //cmp->SetMagneticField(0.,0.,1.0);
 
   GeometrySimple * geo = new GeometrySimple();
- 
-  SolidBox * enclosure = new SolidBox(0,0,0,10,4.7,11);
+   //   SolidBox * enclosure = new SolidBox(0,0,0,10,31.,11);
+  SolidBox * enclosure = new SolidBox(0,0,0,20,31.0,11);
   geo->AddSolid(enclosure, gas);
   cmp->SetGeometry(geo);
-  const double vCathode= -7500;
+  const double vCathode= -7000;
   const double rCathode= 175e-4; // is this in centimeters? seems so
   const double vAnode= 0;
-  const double rAnode= 20e-4;
+  //const double rAnode= 20e-4;
+  const double rAnode= 40e-4;
 //  const double rAnode= 175e-4;
-  const double vPotential= -2700;
+  const double vPotential= -3000;
 //  const double rPotential= 175e-4;
-  const double rPotential= 175e-4;
+  const double rPotential= 350e-4;
+  //const double rPotential= 250e-4;
   
   const double anodesep = 0.8;
   const double potentialsep = 0.8;
@@ -166,39 +169,42 @@ int main(int argc, char * argv[]) {
       float y = starting_y-iw*anodesep;
       float sign = -1.0;
       if(iw%2==0) sign = 1.0;
-      float x = sign*300e-4;
+      float x = sign*360e-4;
       //float x = 0;
-      cmp->AddWire(x,y,2 * rAnode, vAnode, "a");
+      cmp->AddWire(x,y,rAnode, vAnode, "a");
       std::cout << " wire " << x << " " << y << " " << vAnode << " " << "a" << std::endl;
       last_y_anode=y;
     }
     for(int iw=0;iw<nwire;iw++){
       float y = (starting_y-(potentialsep/2.0))-iw*potentialsep;
       float x = 0;
-      cmp->AddWire(x,y,2 * rPotential, vPotential, "p");
+      //float x = 100e-4;
+      cmp->AddWire(x,y, rPotential, vPotential, "p");
       std::cout << " wire " << x << " " << y << " " << vPotential << " " << "p" << std::endl;
       last_y_potential=y;
     }
     // add in 3 potential wires at the bottom and top now separated by 4mm from eachother and by 4mm from the bottom or top wire
-    cmp->AddWire(0,starting_y+(potentialsep/2.0),2 * rPotential, vPotential, "pT");
-    cmp->AddWire(0,starting_y+(2.0*potentialsep/2.0),2 * rPotential, vAnode, "pT");
-    cmp->AddWire(0,starting_y+(3.0*potentialsep/2.0),2 * rPotential, vPotential, "pT");
-    std::cout << " wire " << 0 << " " << starting_y+(potentialsep/2.0) << " " << vPotential << " " << "pT" << std::endl;
-    std::cout << " wire " << 0 << " " << starting_y+(2.0*potentialsep/2.0) << " " << vAnode << " " << "pT" << std::endl;
-    std::cout << " wire " << 0 << " " << starting_y+(3.0*potentialsep/2.0) << " " << vPotential << " " << "pT" << std::endl;
+    cmp->AddWire(0,starting_y+(potentialsep/2.0),  rPotential, vPotential, "pT");
+    cmp->AddWire(0,starting_y+(2.0*potentialsep/2.0),  rPotential, vAnode, "pT");
+    cmp->AddWire(0,starting_y+(3.0*potentialsep/2.0),  rPotential, vPotential, "pT");
+    //std::cout << " wire " << 0 << " " << starting_y+(potentialsep/2.0) << " " << vPotential << " " << "pT" << std::endl;
+    //std::cout << " wire " << 0 << " " << starting_y+(2.0*potentialsep/2.0) << " " << vAnode << " " << "pT" << std::endl;
+    //std::cout << " wire " << 0 << " " << starting_y+(3.0*potentialsep/2.0) << " " << vPotential << " " << "pT" << std::endl;
 
-    cmp->AddWire(0,last_y_potential-(potentialsep/2.0),2 * rPotential, vAnode, "pT");
-    cmp->AddWire(0,last_y_potential-(2.0*potentialsep/2.0),2 * rPotential, vPotential, "pT");
-    cmp->AddWire(0,last_y_potential-(3.0*potentialsep/2.0),2 * rPotential, vAnode, "pT");
-    std::cout << " wire " << 0 << " " << last_y_potential-(potentialsep/2.0) << " " << vAnode << " " << "pT" << std::endl;
-    std::cout << " wire " << 0 << " " << last_y_potential-(2.0*potentialsep/2.0) << " " << vPotential << " " << "pT" << std::endl;
-    std::cout << " wire " << 0 << " " << last_y_potential-(3.0*potentialsep/2.0) << " " << vAnode << " " << "pT" << std::endl;
+    cmp->AddWire(0,last_y_potential-(potentialsep/2.0),  rPotential, vAnode, "pT");
+    cmp->AddWire(0,last_y_potential-(2.0*potentialsep/2.0),  rPotential, vPotential, "pT");
+    cmp->AddWire(0,last_y_potential-(3.0*potentialsep/2.0),  rPotential, vAnode, "pT");
+    //std::cout << " wire " << 0 << " " << last_y_potential-(potentialsep/2.0) << " " << vAnode << " " << "pT" << std::endl;
+    //std::cout << " wire " << 0 << " " << last_y_potential-(2.0*potentialsep/2.0) << " " << vPotential << " " << "pT" << std::endl;
+    //std::cout << " wire " << 0 << " " << last_y_potential-(3.0*potentialsep/2.0) << " " << vAnode << " " << "pT" << std::endl;
 
   }
-  bool oldWay = false;
+  double the_final_distance=7.62;
+  bool oldWay = true;
+  bool gaussian=false;
   if(oldWay){
-    cmp->AddPlaneX(-7.62,-7500,"cP1"); 
-    cmp->AddPlaneX(7.62,-7500,"cP2");
+    cmp->AddPlaneX(-1.0 * the_final_distance,vCathode,"cP1"); 
+    cmp->AddPlaneX(the_final_distance,vCathode,"cP2");
   }
   else{
     // need to do cmp->AddWire() like above
@@ -209,12 +215,27 @@ int main(int argc, char * argv[]) {
     double cathode_mesh_diameter = 0.005; // 50 microns which is 0.05 mm 
     for(int iw=0;iw<nmesh+1;iw++){
       float y = cathode_start-(iw*cathode_mesh_sep);
-      float xLeft = -7.62; // this is the leftmost edge of the chamber, we will approximate the cathode plane with a bunch of wires, we can adjust the diameter and spacing to get a good approximation to a plane
-      float xRight = 7.62; // this is the rightmost edge of the chamber, we will approximate the cathode plane with a bunch of wires, we can adjust the diameter and spacing to get a good approximation to a plane
+      float xLeft = -1.0 * the_final_distance; // this is the leftmost edge of the chamber, we will approximate the cathode plane with a bunch of wires, we can adjust the diameter and spacing to get a good approximation to a plane
+      float xRight = the_final_distance; // this is the rightmost edge of the chamber, we will approximate the cathode plane with a bunch of wires, we can adjust the diameter and spacing to get a good approximation to a plane
+      // turning on a deflection?
+      // Parameters for deflection
+      if(gaussian){
+        double peakDeflection = xLeft * 0.03; // 1% deflection
+        double yMid = 0.0;            // Center of the range
+        double sigma = cathode_start / 2.0;           // Spread (adjust to taste)
+        // Apply smooth deflection
+        double exponent = -std::pow(y - yMid, 2) / (2.0 * std::pow(sigma, 2));
+        xLeft += peakDeflection * std::exp(exponent);
+      }
+      //else if (!gaussian){ // linear tilt? symmetric about 0
+      //  double tilt_amnt=thistilt/10000.0; // in cm from microns
+      //  xLeft += ((tilt_amnt)/(cathode_start)*y);
+      //  xRight += ((tilt_amnt)/(cathode_start)*y);
+      //}
       cmp->AddWire(xLeft,y,cathode_mesh_diameter, vCathode, "cP1");
       cmp->AddWire(xRight,y,cathode_mesh_diameter, vCathode, "cP2");
-      std::cout << " wire " << xLeft << " " << y << " " << vCathode << " " << "cP1" << std::endl;
-      std::cout << " wire " << xRight << " " << y << " " << vCathode << " " << "cP2" << std::endl;
+      //std::cout << " wire " << xLeft << " " << y << " " << vCathode << " " << "cP1" << std::endl;
+      //std::cout << " wire " << xRight << " " << y << " " << vCathode << " " << "cP2" << std::endl;
     }
   }
 
@@ -222,7 +243,7 @@ int main(int argc, char * argv[]) {
 
   float v=0;
   float tweak=0;
-  float drift_dist_max=7.62*1.0;
+  float drift_dist_max=the_final_distance*1.0; // adjusted
   int nstrips_per_PCB=40; // from field-shaping PCBs
   int nstrips=2*nstrips_per_PCB; // 2 pcbs for a drift cell (1 on left and 1 on right)
   int count_me=0;
@@ -244,12 +265,15 @@ int main(int argc, char * argv[]) {
 	    //v= (1+tweak*(drift_dist_max-x)/drift_dist_max )*( vCathode +  (vPotential-vCathode)*(drift_dist_max-x)/drift_dist_max)  ;
 	    //v= (1+tweak*(drift_dist_max-x)/drift_dist_max )*( vCathode +  (vAnode-vCathode)*(drift_dist_max-x)/drift_dist_max);
       v=vCathode +  voltage_step*(ipad+1);
-      std::cout << " wire " << x << " " << y << " " << v << " " << "T" << " count: " << count_me  << "out of " << nstrips << std::endl;
-      std::cout << " wire " << left_x << " " << y << " " << v << " " << "T" << " count: " << count_me  << "out of " << nstrips << std::endl;
+      //std::cout << " wire " << x << " " << y << " " << v << " " << "T" << " count: " << count_me  << "out of " << nstrips << std::endl;
+      //std::cout << " wire " << left_x << " " << y << " " << v << " " << "T" << " count: " << count_me  << "out of " << nstrips << std::endl;
 
       count_me++;
       cmp->AddWire(x,y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
       cmp->AddWire(left_x,y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
+      // lets try adding in the other side (subtract off two of the drift_dist_max from the left_x and add on two drift_dist_max to the x)
+      cmp->AddWire(x+(2.0*drift_dist_max),y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
+      cmp->AddWire(left_x-(2.0*drift_dist_max),y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
 
 
     }
@@ -273,46 +297,66 @@ int main(int argc, char * argv[]) {
   //sensor->ElectricField(-1.0,-1.0,0,ex,ey,ez,gas,stat_efield); ///const double x, const double y, const double z,
                            //double &ex, double &ey, double &ez, double &v,
                            //Medium *&medium, int &status
+  // plotting helix E_y (E_x here) versus helix z (which is y here) at different Helix y values (x positions here) to see if the plane compared to the mesh matters
+ 
+  std::stringstream TF1name; // for accessing FullBField files
+  TFile * thisguy; // output file
+  TF1name.str("");
+  // BFieldIsoMaps_wireID_1.root
+  TF1name << "driftAndEProfiles_350stagger_0Tesla_higherGainVoltage_origdist_7kV.root";
 
-
-  TCanvas canvas("c", "", 600, 600);
-  ViewField fieldView;
-  fieldView.SetCanvas(&canvas);
-  fieldView.SetComponent(cmp);
-  //fieldView.PlotLimits(cmp,-7.5,-1000,7.5,1000);
-  //fieldView.SetElectricFieldRange(-1000., 1000.0);
-  //constexpr bool plotProfile = true;
-  if (true) {
-    //fieldView.PlotProfile(-7.5, 0.4, 0.0,7.5 , 0.4, 0., "ex"); // this line is for a field-shaping/potential wire region near (0,0.4,0). 
-    //fieldView.PlotProfile(-7.5, 0.2, 0.0,7.5 , 0.2, 0., "ex"); // this line is for a field-shaping/potential wire region near (0,0.4,0). 
-    //fieldView.PlotProfile(-7.5, 0.0, 0.0,7.5 , 0.0, 0., "ex"); // this line is for a sense wire region near (0,0,0). 
-    //fieldView.PlotProfile(-7.5, 0.0, 0.0,0.1 , 0.0, 0., "ex"); // this line is for a sense wire region near (0,0,0). 
-    //fieldView.PlotProfile(-7.5, 0.0, 0.0,7.5 , 0.0, 0., "ex"); // this line is for a sense wire region near (0,0,0). 
-    //fieldView.PlotProfile(-7.5, 0.4, 0.0,7.5 , 0.4, 0., "ex"); // this line is for a sense wire region near (0,28.4,0).
-    fieldView.SetElectricFieldRange(-1200., 1200.0);
-    fieldView.PlotProfile(-7.62, zpos/10.0, 0.0,7.62, zpos/10.0, 0.0, "ex"); // this line is for a sense wire region near (0,28.4,0).  // divide by 10.0 to get into centimeters
-    //fieldView.PlotProfile(-7.5, 27.6, 0.0,7.5 , 27.6, 0., "ex"); // this line is for a sense wire region near (0,-28.0,0). 
-    TPad * mypad=fieldView.GetCanvas();
-    
-    mypad->SaveAs(efieldfilename.str().c_str());
-    //fieldView.Ge->SaveAs("testexe.root");
-  } else {
-    fieldView.SetArea(-7.5, -28.4, 7.5, 28.4);
-    //fieldView.SetArea(-1.5, -0.4, 1.5, 0.4);
-    //fieldView.PlotContour("v");
-    fieldView.Plot("v","colz");  
-
-    ViewCell cellView;
-    //cellView.SetCanvas(&canvas);
-    //cellView.SetComponent(&cmp);
-    //cellView.SetArea(1.1 * xMin, 1.1 * yMin, -1., 1.1 * xMax, 1.1 * yMax, 1.);
-    //cellView.Plot2d();
+  std::cout << "writing to file: " << TF1name.str().c_str() << std::endl;
+  thisguy = TFile::Open(TF1name.str().c_str(),"RECREATE");
+  if(!thisguy || !thisguy->IsOpen() || thisguy->IsZombie()){
+    return -1;
   }
-  std::cout << "Efield found: \n";
-   auto end = std::chrono::high_resolution_clock::now();
+  thisguy->cd();
+  double y_value_to_plot = 6.0;
+  while(y_value_to_plot>4.0){
+    double x_min = 0.0;
+    double x_max = 7.6;
+    double x_step=0.01; // 10um steps? // this will be 10k points? fuck
+    TGraph * thisgEy = new TGraph();
+    TGraph * thisgVy = new TGraph();
+    std::stringstream thisname;
+    thisname << "Ey_vs_y_" << std::fixed << std::setprecision(0) << y_value_to_plot*10.0;
+    thisgEy->SetName(thisname.str().c_str());
+    thisgEy->SetTitle("Drift Electric Field vs y position; y(mm);Ey(V/cm)");
+    thisname.str("");
+    thisname << "Vy_vs_y_" << std::fixed << std::setprecision(0) << y_value_to_plot*10.0;
+    thisgVy->SetName(thisname.str().c_str());
+    thisgVy->SetTitle("Drift Velocity vs y position; y(mm);Vy(cm/us)");
+    while(x_min<x_max+x_step/2.0){
+      Medium * medium = nullptr;
+      double ex = 0., ey = 0., ez = 0.;
+      int status;
+      sensor->ElectricField(x_min,y_value_to_plot,0,ex,ey,ez,medium,status);
+      if(ex<1.0 && ex>-1.0){
+        std::cout << "whyyy" << std::endl;
+      }
+      thisgEy->AddPoint(x_min*10.0,ex);
+      if(status!=0 || x_min==0.03){
+        std::cout << "oof " << status << "at x step " << x_min << std::endl;
+              x_min+=x_step;
+        continue;
+      }
+      // get drift velocity
+      double vx = 0., vy = 0., vz = 0.;
+      gas->ElectronVelocity(ex, ey, ez, 0, 0, 0, vx, vy, vz);
+      thisgVy->AddPoint(x_min*10.0,vx*1000.0);
+      x_min+=x_step;
+    }
+    thisgEy->Write();
+    thisgVy->Write();
+    delete thisgEy;
+    delete thisgVy;
+    y_value_to_plot-=0.8;
+  }
+  std::cout << "Efields found: \n";
+  auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed_seconds = end - start;
   std::cout << "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
-
+  thisguy->Close();
   //app->Run(kTRUE);
   return 0;
 }

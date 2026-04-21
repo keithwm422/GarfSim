@@ -89,6 +89,12 @@ VoltageMap_ICRC2025: VoltageMap_ICRC2025.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 eField_plotter_forkenichi: eField_plotter_forkenichi.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+eField_investigation: eField_investigation.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+driftField_profile: driftField_profile.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+eField_investigation_oldwire: eField_investigation_oldwire.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 eField_plotter_BESS: eField_plotter_BESS.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 driftField_plotter_forkenichi: driftField_plotter_forkenichi.C

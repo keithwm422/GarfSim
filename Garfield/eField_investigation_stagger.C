@@ -5,21 +5,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <TCanvas.h>
-#include <TLegend.h>
 #include <TROOT.h>
 #include <TApplication.h>
 #include <TFile.h>
+#include <TGraph.h>
 #include <TH1.h>
 #include "Garfield/MediumMagboltz.hh"
 #include "Garfield/FundamentalConstants.hh"
 #include "Garfield/SolidBox.hh"
-#include "Garfield/ComponentAnalyticField.hh"
-#include "Garfield/ComponentGrid.hh"
 #include "Garfield/Sensor.hh"
+#include "Garfield/ComponentAnalyticField.hh"
 #include "Garfield/GeometrySimple.hh"
 #include "Garfield/ViewCell.hh"
 #include "Garfield/ViewField.hh"
-#include "Garfield/ViewMedium.hh"
 #include "Garfield/TrackSimple.hh"
 #include "Garfield/ViewDrift.hh"
 #include "Garfield/TrackHeed.hh"
@@ -41,32 +39,19 @@
 #include <iomanip>
 #include <omp.h>
 #include <chrono>
-#include <cstdlib> // For system()
 
 using namespace Garfield;
+ 
+// removed
+//#include "Garfield/Plotting.hh"
 
-#define numhists 20
-
-
-void extractFileFromTarGz(const std::string& archivePath, const std::string& fileNameToExtract, const std::string& outputPath) {
-    // Construct the command to extract the specific file
-    std::string command = "tar -xzvf " + archivePath + " " + " -C " + outputPath + " " + fileNameToExtract; //tar -xzvf HEATModelGarfieldFiles.tar.gz -C /home/kmcbride/HEATModel_files_for$    // Execute the command
-    int result = std::system(command.c_str());
-
-    if (result == 0) {
-        std::cout << "Successfully extracted '" << fileNameToExtract << "' to '" << outputPath << "'." << std::endl;
-    } else {
-        std::cerr << "Error extracting file: " << result << std::endl;
-    }
-}
-
-double getMean(const std::vector<int> &input){
+double getMean(const std::vector<double> &input){
   double sum = std::accumulate(input.begin(), input.end(), 0.0);
   double mean = sum / input.size();
   return mean;
 }
 
-double getSigma(const std::vector<int> &input){
+double getSigma(const std::vector<double> &input){
   //std::cout << " size is " << static_cast<double>(input.size()) << std::endl;
   //double sum = std::accumulate(input.begin(), input.end(), 0.0);
   //double mean = sum / input.size();
@@ -81,22 +66,23 @@ double getSigma(const std::vector<int> &input){
 
 int main(int argc, char * argv[]) {
   auto start = std::chrono::high_resolution_clock::now();
-  //TRint* app = new TRint("Garfield", &argc, argv, 0, 0);
 
+  bool realtimeplots = true;
+  TRint* app = new TRint("Garfield", &argc, argv, 0, 0);
   std::stringstream wid;
+
+
+  // TApplication app("app", &argc, argv);
   double invals[10]={0};
   for(int i = 1; i < argc; i++){
     invals[i-1] = atof(argv[i]);
     std::cout << invals[i-1] << std::endl;
   }
- // const int wireIDOfInterest = invals[0];
-  const double temperature   = invals[0];
-  const double BFieldValue   = invals[1];
-  const double input_tstep   = invals[2];
-  const int which_column     = invals[3];
-  const double x_slice     = invals[4];
-  std::cout << "Will simulate gas gain" << std::endl;
-  //
+  const double thistilt = invals[0]; // HELIX zposition slice to plot Efield in millimeters
+  std::cout << "Tilt will be : " << thistilt << "um" <<  std::endl;
+
+
+
   int pid = getpid();
   timeval t;
   gettimeofday(&t, NULL);
@@ -104,41 +90,46 @@ int main(int argc, char * argv[]) {
   std::cout << "Random Seed: " << seed << std::endl;
   gRandom->TRandom::GetSeed();
 
-// gasfile stuff
-//std::cout << "RSS before gasfile allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
+  for (int iplane=0;iplane<1;iplane++){
+    for (int iw =0;iw<7;iw++){
+      int iadd = iplane*7 + iw;
+      wid.str("");
+      wid << "a_" <<iplane << "_" << iw ;
+      std::cout << iadd << " " << wid.str() << std::endl;
+      std::string str(wid.str());
+      const char * name = str.c_str();
+    }
+  }
+
+  //Garfield::plottingEngine.SetDefaultStyle();
   MediumMagboltz * gas = new MediumMagboltz();
+
   // Setup the gas
-  //const double temperature=299.15;
-  const double pressure = 14.616*51.7149; // in torr- we were at 14.6 psi (1 psi = 51.7149 torr) 
-  gas->SetTemperature(temperature); // from CLI
+  const double pressure = 760.; //Torr
+  const double temperature = 293.15; //K
+ 
+  // Set the temperature [K] and pressure [Torr]
+  gas->SetTemperature(temperature);
   gas->SetPressure(pressure);
-  gas->SetComposition("CO2", 90.,"AR", 10.);
-  const int nFields = 5;
-  const double E_not = 984.25;
-  const double emin = E_not-E_not;
-  const double emax = E_not+E_not;
-  // Flag to request logarithmic spacing.
-  const bool useLog = false;
-  const double bmin=0;
-  const double bmax=2; // do we need magnetic field on?
-  const int nBFields=4;
-  gas->SetFieldGrid(emin, emax, nFields, useLog, bmin,bmax,nBFields,TMath::Pi()/2.0,TMath::Pi()/2.0,1); 
-  // Turn on penning transfer?
-  gas->EnablePenningTransfer();
-  gas->SetMaxElectronEnergy(200);
-  std::cout << "number of levels: " << gas->GetNumberOfLevels();
-  const int ncoll = 5;
-  gas->GenerateGasTable(ncoll);
+  gas->SetComposition("co2", 85, "ar", 15);
+
+//  gas->LoadGasFile("co2_90_AR_10_T273.gas");
+//  gas->LoadGasFile("keith_co2_85_AR_15_T273.gas");
+  gas->LoadGasFile("Flight2024_Boff_P_755.865_T_293.15_multiE_90CO2_10Ar.gas");
+
   // lets just print out the drift velocity to a file?
+
   char * IonData = getenv("GARFIELD_IONDATA") ;
   gas->LoadIonMobility(IonData);
   gas->PrintGas();
-  //std::cout << "RSS after gasfile allocation: " << getCurrentRSS() / 1024 << " KB" << std::endl;
+
   ComponentAnalyticField * cmp = new ComponentAnalyticField();
-  //cmp->SetMagneticField(0.,0.,BFieldValue);
-  //cmp->SetMagneticField(0.,0.,1.0);
+//  cmp->SetMagneticField(0.,0.,0.0);
+  cmp->SetMagneticField(0.,0.,1.0);
+
   GeometrySimple * geo = new GeometrySimple();
-  SolidBox * enclosure = new SolidBox(0,0,0,10,31.,11);
+   //   SolidBox * enclosure = new SolidBox(0,0,0,10,31.,11);
+  SolidBox * enclosure = new SolidBox(0,0,0,20,31.0,11);
   geo->AddSolid(enclosure, gas);
   cmp->SetGeometry(geo);
   const double vCathode= -7500;
@@ -176,8 +167,7 @@ int main(int argc, char * argv[]) {
       if(iw%2==0) sign = 1.0;
       float x = sign*300e-4;
       //float x = 0;
-      if(iw==36) cmp->AddWire(x,y,2 * rAnode, vAnode, "asig");
-      else cmp->AddWire(x,y,2 * rAnode, vAnode, "a");
+      cmp->AddWire(x,y,2 * rAnode, vAnode, "a");
       std::cout << " wire " << x << " " << y << " " << vAnode << " " << "a" << std::endl;
       last_y_anode=y;
     }
@@ -204,9 +194,44 @@ int main(int argc, char * argv[]) {
     std::cout << " wire " << 0 << " " << last_y_potential-(3.0*potentialsep/2.0) << " " << vAnode << " " << "pT" << std::endl;
 
   }
-
-  cmp->AddPlaneX(-7.62,-7500,"cP1"); 
-  cmp->AddPlaneX(7.62,-7500,"cP2");
+  bool oldWay = false;
+  bool gaussian=false;
+  if(oldWay){
+    cmp->AddPlaneX(-7.62,-7500,"cP1"); 
+    cmp->AddPlaneX(7.62,-7500,"cP2");
+  }
+  else{
+    // need to do cmp->AddWire() like above
+    // but now for 2 mil diameter (50um) on 3 mil centers/pitch (75um).
+    double cathode_start  = starting_y+(4.0*potentialsep/2.0); // we will need to address this probably
+    double cathode_mesh_sep = 0.0075;  // 75 microns which is 0.075 mm 
+    int nmesh = 8000; // crazy but maybe correct...
+    double cathode_mesh_diameter = 0.005; // 50 microns which is 0.05 mm 
+    for(int iw=0;iw<nmesh+1;iw++){
+      float y = cathode_start-(iw*cathode_mesh_sep);
+      float xLeft = -7.62; // this is the leftmost edge of the chamber, we will approximate the cathode plane with a bunch of wires, we can adjust the diameter and spacing to get a good approximation to a plane
+      float xRight = 7.62; // this is the rightmost edge of the chamber, we will approximate the cathode plane with a bunch of wires, we can adjust the diameter and spacing to get a good approximation to a plane
+      // turning on a deflection?
+      // Parameters for deflection
+      if(gaussian){
+        double peakDeflection = xLeft * 0.03; // 1% deflection
+        double yMid = 0.0;            // Center of the range
+        double sigma = cathode_start / 2.0;           // Spread (adjust to taste)
+        // Apply smooth deflection
+        double exponent = -std::pow(y - yMid, 2) / (2.0 * std::pow(sigma, 2));
+        xLeft += peakDeflection * std::exp(exponent);
+      }
+      else if (!gaussian){ // linear tilt? symmetric about 0
+        double tilt_amnt=thistilt/10000.0; // in cm from microns
+        xLeft += ((tilt_amnt)/(cathode_start)*y);
+        xRight += ((tilt_amnt)/(cathode_start)*y);
+      }
+      cmp->AddWire(xLeft,y,cathode_mesh_diameter, vCathode, "cP1");
+      cmp->AddWire(xRight,y,cathode_mesh_diameter, vCathode, "cP2");
+      std::cout << " wire " << xLeft << " " << y << " " << vCathode << " " << "cP1" << std::endl;
+      std::cout << " wire " << xRight << " " << y << " " << vCathode << " " << "cP2" << std::endl;
+    }
+  }
 
 
 
@@ -240,6 +265,9 @@ int main(int argc, char * argv[]) {
       count_me++;
       cmp->AddWire(x,y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
       cmp->AddWire(left_x,y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
+      // lets try adding in the other side (subtract off two of the drift_dist_max from the left_x and add on two drift_dist_max to the x)
+      cmp->AddWire(x+(2.0*drift_dist_max),y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
+      cmp->AddWire(left_x-(2.0*drift_dist_max),y,strip_size, v, "T"); // arguments are "xloc, yloc, diameter, voltage, label"
 
 
     }
@@ -250,87 +278,72 @@ int main(int argc, char * argv[]) {
   std::cout << " diameter of cathode is: "  << 2.0*rCathode << std::endl;
   std::cout << " strip_size is: "  << strip_size  << std::endl;
 
-// geometry detector wires
-
-  std::cout << " strip_sep is: "  << strip_sep  << std::endl;
-  std::cout << " estimated diameter should be "  <<  2.0*drift_dist_max/(double) (2.0*(nstrips_per_PCB-1)) << std::endl;
-  std::cout << " diameter of cathode is: "  << 2.0*rCathode << std::endl;
-  std::cout << " strip_size is: "  << strip_size  << std::endl;
-
-  // need to tar extract the file so we dont need all of them unloaded:
-  std::stringstream magfilename;
-  magfilename << "HEATModelForGarfield/HEATModel_xslice_";
-  magfilename << std::fixed << std::setprecision(0) << x_slice << "_column_" << which_column << ".csv";
-
-  std::string archive = "HEATModelGarfieldFiles.tar.gz";
-  //std::string fileToExtract = "HEATModelForGarfield/HEATModel_xslice_0_column_1.csv"; // Path within the archive // looks like HEATModelForGarfield/HEATModel_xslice_0_column_0.csv
-  std::string outputDir = "/home/kmcbride/garfield/keithsGarfield/DCT_Codes/GarfSim/Garfield/HEATModel_files_for_garfield";
-  extractFileFromTarGz(archive, magfilename.str(), outputDir);
-  // Now you can read the extracted file:
-  std::string extractedFilePath = outputDir + "/" + magfilename.str(); // Adjust if file path within archive differs from output path
-
-  // Load the field map.
-  ComponentGrid * cmpB = new ComponentGrid();
-  cmpB->SetGeometry(geo);
-  //cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
-  if(which_column==0 || which_column==1 || which_column==-1){
-    //cmpB->LoadMagneticField(magfilename.str() , "XYZ");
-    cmpB->LoadMagneticField(extractedFilePath , "XYZ");
-  }
-  //cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ");
-  //else if(which_column==-1) cmpB->LoadMagneticField("garfield_left_column.csv", "XYZ");
-  //else if(which_column==1) cmpB->LoadMagneticField("garfield_right_column.csv", "XYZ");
-  //cmpB->LoadMagneticField("/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_-200_column_0.csv" , "XYZ");
-  //else if(which_column==3) cmpB->LoadMagneticField("/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_200_column_0.csv" , "XYZ");
-  //else if(which_column==4) cmpB->LoadMagneticField("/home/kmcbride/master/08212025/helix-tools/00build/HEATModel_xslice_-100_column_0.csv" , "XYZ");
-  else cmpB->LoadMagneticField("garfield_HEAT_example_v2.csv", "XYZ"); // come up with a file that has x,y,z in cm and bx,by,bz in Tesla
-
-
-
   Sensor * sensor = new Sensor;
-  sensor->AddComponent(cmpB);
+  //ViewSignal * vs1 = new ViewSignal;
+
   sensor->AddComponent(cmp);
-
-
   sensor->SetTimeWindow(0,2,20000); // might need to change this, its start, step size, number of steps
-  cmp->AddReadout("asig");
-  sensor->AddElectrode(cmp,"asig");
-  sensor->EnableComponent(0, true);
-  sensor->EnableComponent(1, true);
-  AvalancheMicroscopic * aval = new AvalancheMicroscopic();
-  aval->EnableSignalCalculation(false);
-  //aval->EnableMagneticField();
-  //driftline->EnableDiffusion();
-  //driftline->EnableAttachment();
-  aval->SetSensor(sensor);
-  std::cout << "Avalanch size limit is: " << (int) (aval->GetAvalancheSizeLimit()) << std::endl;
-  aval->EnableAvalancheSizeLimit(100000);
-  std::cout << "Avalanch size limit after setting is: " << (int) (aval->GetAvalancheSizeLimit()) << std::endl;
-  //bool did_it_drift=driftline->DriftElectron(x_delt,y_delt,z_i,0);
-  std::vector<int> electrons_drifted_aval;
-  std::vector<int> ions_drifted_aval;
-  for(int i=0;i<100;i++){
-    double xendpoint, yendpoint, zendpoint, tendpoint, energy0,xendpoint2, yendpoint2, zendpoint2, tendpoint2, energy1;
-    int stat;
-    int ne_av,ni_av;
-    bool did_it_drift=aval->AvalancheElectron(1,1,0,0,0,0,0,0);
-  
-    //std::cout << __LINE__ << std::endl;
-    //int nelectronpoints = driftline->GetNumberOfElectronEndpoints();
-    aval->GetElectronEndpoint(0, xendpoint, yendpoint, zendpoint, tendpoint, energy0,xendpoint2, yendpoint2, zendpoint2, tendpoint2, energy1, stat);
-    aval->GetAvalancheSize(ne_av,ni_av);
-    electrons_drifted_aval.push_back(ne_av);
-    ions_drifted_aval.push_back(ni_av);
-    //std::cout << "Avalanch : " << ne_av << "," << ni_av << std::endl;
-
+  cmp->AddReadout("a");
+  sensor->AddElectrode(cmp,"a");
+  //vs1->SetSensor(sensor);
+  //double ex,ey,ez;
+  //int stat_efield;
+  //sensor->ElectricField(-1.0,-1.0,0,ex,ey,ez,gas,stat_efield); ///const double x, const double y, const double z,
+                           //double &ex, double &ey, double &ez, double &v,
+                           //Medium *&medium, int &status
+  // plotting helix E_y (E_x here) versus helix z (which is y here) at different Helix y values (x positions here) to see if the plane compared to the mesh matters
+ 
+  std::stringstream TF1name; // for accessing FullBField files
+  TFile * thisguy; // output file
+  TF1name.str("");
+  // BFieldIsoMaps_wireID_1.root
+  TF1name << "Tilt_" << std::fixed << std::setprecision(0) << thistilt << "um.root";
+  std::cout << "writing to file: " << TF1name.str().c_str() << std::endl;
+  thisguy = TFile::Open(TF1name.str().c_str(),"RECREATE");
+  if(!thisguy || !thisguy->IsOpen() || thisguy->IsZombie()){
+    return -1;
   }
-    std::cout << "Avalanch : " << getMean(electrons_drifted_aval) << "," << getMean(ions_drifted_aval) << std::endl;
-
-      TCanvas * cD = new TCanvas("cD", "", 600, 600);
-
-  //aval->EnablePathLengthComputation();
-  //aval->EnableAvalancheSizeLimit(1000);
-  //  driftline->EnablePlotting(vd);
-  //  driftline->EnableSignalCalculation();
- return 0;
+  thisguy->cd();
+  double x_value_to_plot = 7.0;
+  while(x_value_to_plot>-7.9){
+    double y_min = -25.0;
+    double y_max = 25.0;
+    double y_step=0.10; // 10um steps? // this will be 10k points? fuck
+    if(oldWay){
+      y_min=-30.0;
+      y_max=30.0;
+      y_step=0.1;
+    }
+    TGraph * thisg = new TGraph();
+    TGraph * thisgz = new TGraph();
+    std::stringstream thisname;
+    thisname << "Ey_vs_z_" << std::fixed << std::setprecision(0) << x_value_to_plot;
+    thisg->SetName(thisname.str().c_str());
+    thisg->SetTitle("Drift Electric Field vs z position; z(cm);Ey(V/cm)");
+    thisname.str("");
+    thisname << "Ez_vs_z_" << std::fixed << std::setprecision(0) << x_value_to_plot;
+    thisgz->SetName(thisname.str().c_str());
+    thisgz->SetTitle("Drift Electric Field vs z position; z(cm);Ez(V/cm)");
+    while(y_min<y_max+y_step/2.0){
+      Medium * medium = nullptr;
+      double ex = 0., ey = 0., ez = 0.;
+      int status;
+      sensor->ElectricField(x_value_to_plot,y_min,0,ex,ey,ez,medium,status);
+      thisg->AddPoint(y_min,ex);
+      thisgz->AddPoint(y_min,ey);
+      y_min+=y_step;
+    }
+    thisg->Write();
+    thisgz->Write();
+    delete thisg;
+    delete thisgz;
+    x_value_to_plot-=1.0;
+  }
+  std::cout << "Efields found: \n";
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::cout << "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
+  thisguy->Close();
+  //app->Run(kTRUE);
+  return 0;
 }
