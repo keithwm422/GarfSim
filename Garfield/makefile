@@ -45,7 +45,11 @@ Csv_drift_vs_gascomp: Csv_drift_vs_gascomp.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 LoadGasFile: LoadGasFile.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+LoadGasDriftStudy:  LoadGasDriftStudy.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 MakeGasFile: MakeGasFile.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+MakeGasFile_driftStudy: MakeGasFile_driftStudy.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 MakeGasFile_2: MakeGasFile_2.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
@@ -90,6 +94,8 @@ VoltageMap_ICRC2025: VoltageMap_ICRC2025.C
 eField_plotter_forkenichi: eField_plotter_forkenichi.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 eField_investigation: eField_investigation.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+EField_generator: EField_generator.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 driftField_profile: driftField_profile.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
@@ -160,6 +166,8 @@ make_potential_map_original: make_potential_map_original.C
 make_potential_map: make_potential_map.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 make_potential_map_wires_for_cathode: make_potential_map_wires_for_cathode.C
+	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
+DriftVelocityCheckGrid: DriftVelocityCheckGrid.C
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)
 filterjob:  filterjob.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(LDLIBS)

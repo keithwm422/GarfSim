@@ -15,6 +15,7 @@
 #include "Garfield/SolidBox.hh"
 #include "Garfield/Sensor.hh"
 #include "Garfield/ComponentAnalyticField.hh"
+#include "Garfield/ComponentGrid.hh"
 #include "Garfield/GeometrySimple.hh"
 #include "Garfield/ViewCell.hh"
 #include "Garfield/ViewField.hh"
@@ -83,7 +84,10 @@ int main(int argc, char * argv[]) {
   const double thisOldWay = invals[1]; // HELIX zposition slice to plot Efield in millimeters
   bool input_oldWay = (thisOldWay >= 0) ? false : true; // if negative, we will do oldway
   std::cout << "Old way : " << input_oldWay <<  std::endl;
-
+  const int real_in_factor = invals[2]; // HELIX zposition slice to plot Efield in millimeters
+  int in_factor = 1;
+  if(real_in_factor >1) in_factor = real_in_factor;
+  std::cout << "Grid Factor multiplication " << in_factor <<  std::endl;
 
 
   int pid = getpid();
@@ -116,8 +120,8 @@ int main(int argc, char * argv[]) {
   gas->SetPressure(pressure);
   gas->SetComposition("co2", 85, "ar", 15);
 
-  //gas->LoadGasFile("/home/kmcbride/garfield/keiths_code/GarfSim/Garfield/FlightGasFiles/BOFF/Flight2024_Boff_P_755.865_T_299.15_multiE_90CO2_10Ar_01122024.gas");
-  gas->LoadGasFile("Flight2024_Boff_P_755.865_T_299.15_logE.gas");
+  gas->LoadGasFile("/home/kmcbride/garfield/keiths_code/GarfSim/Garfield/FlightGasFiles/BOFF/Flight2024_Boff_P_755.865_T_299.15_multiE_90CO2_10Ar_01122024.gas");
+  //gas->LoadGasFile("Flight2024_Boff_P_755.865_T_299.15_logE.gas");
   //gas->LoadGasFile("/home/kmcbride/garfield/keiths_code/GarfSim/Garfield/FlightGasFiles/BON/Flight2024_Bon_1Tesla_P_755.865_T_299.15_multiE_90CO2_10Ar_01122024.gas");
 
   // lets just print out the drift velocity to a file?
@@ -138,13 +142,13 @@ int main(int argc, char * argv[]) {
   const double vCathode= -7500;
   const double rCathode= 175e-4; // is this in centimeters? seems so
   const double vAnode= 0;
-  //const double rAnode= 20e-4;
-  const double rAnode= 40e-4;
+  const double rAnode= 20e-4;
+  //const double rAnode= 40e-4;
 //  const double rAnode= 175e-4;
   const double vPotential= -2700;
 //  const double rPotential= 175e-4;
-  const double rPotential= 350e-4;
-  //const double rPotential= 250e-4;
+  //const double rPotential= 350e-4;
+  const double rPotential= 250e-4;
   
   const double anodesep = 0.8;
   const double potentialsep = 0.8;
@@ -299,12 +303,19 @@ int main(int argc, char * argv[]) {
                            //double &ex, double &ey, double &ez, double &v,
                            //Medium *&medium, int &status
   // plotting helix E_y (E_x here) versus helix z (which is y here) at different Helix y values (x positions here) to see if the plane compared to the mesh matters
- 
+
+  ComponentGrid * cmpE = new ComponentGrid();
+  cmpE->SetGeometry(geo);
+  std::stringstream elecfilename;
+  //elecfilename << "generated_electric_field_grid.txt";
+  elecfilename << "generated_electric_field_grid_" << in_factor << ".txt"; // generated_electric_field_grid_1.txt
+  cmpE->LoadElectricField(elecfilename.str(), "XYZ",false,false);
+
   std::stringstream TF1name; // for accessing FullBField files
   TFile * thisguy; // output file
   TF1name.str("");
   // BFieldIsoMaps_wireID_1.root
-  TF1name << "driftAndEProfiles_default_logEgasfile.root";
+  TF1name << "drift_compareGrid_andAnalytic_" << in_factor << ".root";
 
   std::cout << "writing to file: " << TF1name.str().c_str() << std::endl;
   thisguy = TFile::Open(TF1name.str().c_str(),"RECREATE");
@@ -316,26 +327,29 @@ int main(int argc, char * argv[]) {
   while(y_value_to_plot>4.0){
     double x_min = 0.0;
     double x_max = 7.6;
-    double x_step=0.01; // 10um steps? // this will be 10k points? fuck
+    double x_step=0.0025; // 25um steps? // this will be 10k points?
     TGraph * thisgEy = new TGraph();
     TGraph * thisgVy = new TGraph();
     std::stringstream thisname;
     thisname << "Ey_vs_y_" << std::fixed << std::setprecision(0) << y_value_to_plot*10.0;
     thisgEy->SetName(thisname.str().c_str());
-    thisgEy->SetTitle("Drift Electric Field vs y position; y(mm);Ey(V/cm)");
+    thisgEy->SetTitle("Diff Drift Electric Field vs y position; y(mm);Ey(V/cm)");
     thisname.str("");
     thisname << "Vy_vs_y_" << std::fixed << std::setprecision(0) << y_value_to_plot*10.0;
     thisgVy->SetName(thisname.str().c_str());
-    thisgVy->SetTitle("Drift Velocity vs y position; y(mm);Vy(cm/us)");
+    thisgVy->SetTitle("Diff Drift Velocity vs y position; y(mm);percent diff in v");
     while(x_min<x_max+x_step/2.0){
       Medium * medium = nullptr;
       double ex = 0., ey = 0., ez = 0.;
       int status;
       sensor->ElectricField(x_min,y_value_to_plot,0,ex,ey,ez,medium,status);
+      double ex_g = 0., ey_g = 0., ez_g = 0.;
+      int status_g;
+      cmpE->ElectricField(x_min,y_value_to_plot,0,ex_g,ey_g,ez_g,medium,status_g);
       if(ex<1.0 && ex>-1.0){
         std::cout << "whyyy" << std::endl;
       }
-      thisgEy->AddPoint(x_min*10.0,ex);
+      thisgEy->AddPoint(x_min*10.0,ex-ex_g);
       if(status!=0 || x_min==0.03){
         std::cout << "oof " << status << "at x step " << x_min << std::endl;
               x_min+=x_step;
@@ -343,8 +357,11 @@ int main(int argc, char * argv[]) {
       }
       // get drift velocity
       double vx = 0., vy = 0., vz = 0.;
+      double vx_g = 0., vy_g = 0., vz_g = 0.;
       gas->ElectronVelocity(ex, ey, ez, 0, 0, 0, vx, vy, vz);
-      thisgVy->AddPoint(x_min*10.0,vx*1000.0);
+      gas->ElectronVelocity(ex_g, ey_g, ez_g, 0, 0, 0, vx_g, vy_g, vz_g);
+      
+      thisgVy->AddPoint(x_min*10.0,TMath::Abs(((vx*1000.0) - (vx_g*1000.0))/(vx*1000.0)*100.0));
       x_min+=x_step;
     }
     thisgEy->Write();
