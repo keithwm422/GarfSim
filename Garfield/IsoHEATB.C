@@ -136,7 +136,8 @@ int main(int argc, char * argv[]) {
   const double input_tstep   = invals[2];
   const int which_column     = invals[3];
   const double x_slice     = invals[4];
-  std::cout << "will be simulating HEAT model with column" << which_column << " at xslice " << x_slice << "mm and temperature " << temperature << std::endl;
+  const int zshifted       = invals[5];
+  std::cout << "will be simulating HEAT model with zshift " << zshifted << " with column" << which_column << " at xslice " << x_slice << "mm and temperature " << temperature << std::endl;
   int pid = getpid();
   timeval t;
   gettimeofday(&t, NULL);
@@ -293,7 +294,9 @@ int main(int argc, char * argv[]) {
 
   // need to tar extract the file so we dont need all of them unloaded:
   std::stringstream magfilename;
-  magfilename << "/scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield/HEATModel_xslice_"; // /scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield
+  //magfilename << "/scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield/HEATModel_xslice_"; // /scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield
+  // keith adding z shift of 4cm here
+  magfilename << "/scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield_v1_8_z" << zshifted << "/HEATModel_shifted_xslice_"; // /scratch/midway3/kmcbride/HEATFieldFiles/HEATModelForGarfield
   magfilename << std::fixed << std::setprecision(0) << x_slice << "_column_" << which_column << ".csv";
 
   std::string archive = "HEATModelGarfieldFiles.tar.gz";
@@ -647,7 +650,7 @@ int main(int argc, char * argv[]) {
   std::stringstream outrootfilename;
   //if(BFieldValue==0.0)  outrootfilename << "DriftLineAllwires4800_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_wakely.root";
   //outrootfilename << "IsoHEATB_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_col_" << which_column << "_xpos_" << x_slice << "_.root";
-  outrootfilename << "/scratch/midway3/kmcbride/isoHeatB_outputs/IsoHEATB_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_col_" << which_column << "_xpos_" << x_slice << "_.root";
+  outrootfilename << "/scratch/midway3/kmcbride/isoHeatB_outputs_v1_8_z" << zshifted << "_shifted/IsoHEATB_" << std::fixed << std::setprecision(1) << BFieldValue << "T_" << temperature << "K_" << input_tstep << "ns_col_" << which_column << "_xpos_" << x_slice << "_.root";
   TFile * Outfile = new TFile(outrootfilename.str().c_str(),"recreate");
   Outfile->cd();
   status_H->Write();
@@ -666,16 +669,23 @@ int main(int argc, char * argv[]) {
   TParameter Bfield("Bfield", BFieldValue);
   TParameter Temperature("Temperature", temperature);
   TParameter versionflag("Isochrone_version", 7);
+  TParameter geoMajVerflag("Geometry_major_version", 1);
+  TParameter geoMinVerflag("Geometry_minor_version", 8);
   TParameter columnFlag("Plane", which_column); // -1 is left, center is 0, right is +1
   TParameter Xposition("XSlice", x_slice); // -1 is left, center is 0, right is +1
   TParameter zstepFlag("Zstep_um",zstep_param*10000.0);
+  TParameter zshift("zshift_Bfield_mm", zshifted);
+  //TParameter zshift("zshift_Bfield_cm", 0);
   tstep_param.Write();
   Bfield.Write();
   Temperature.Write();
   versionflag.Write();
+  geoMajVerflag.Write();
+  geoMinVerflag.Write();
   columnFlag.Write();
   Xposition.Write();
   zstepFlag.Write();
+  zshift.Write();
   Outfile->Close();
   //std::cout << "RSS after writing to file: " << getCurrentRSS() / 1024 << " KB" << std::endl;
   return 0;
